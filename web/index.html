@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="tr" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ÖğretmenCep - Öğretmenler İçin Akıllı Sınıf ve Ders Yönetimi</title>
+  <meta name="description" content="Öğretmenler için %100 çevrimdışı, güvenli ve hızlı sınıf yönetimi. Ders programı, tek tıkla yoklama, sınav notları, yıllık planlar ve Excel aktarımı cebinizde.">
+  <meta name="keywords" content="ÖğretmenCep, öğretmen uygulaması, ders programı, yoklama alma, sınıf yönetimi, MEB yıllık plan, e-okul aktarım, öğretmen ajandası">
+  
+  <!-- Open Graph / Meta -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="ÖğretmenCep - Öğretmenler İçin Akıllı Sınıf ve Ders Yönetimi">
+  <meta property="og:description" content="Tamamen yerel ve çevrimdışı çalışan akıllı sınıf asistanı. Google Play'de yayında!">
+  <meta property="og:image" content="assets/feature_graphic.png">
+  <meta property="og:url" content="https://play.google.com/store/apps/details?id=com.ogretmencep.app">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="assets/icon.png">
+
+  <!-- Fonts: Inter & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              200: '#bfdbfe',
+              300: '#93c5fd',
+              400: '#60a5fa',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              800: '#1e40af',
+              900: '#1e3a8a',
+              950: '#0f172a',
+            },
+            accent: {
+              emerald: '#10b981',
+              amber: '#f59e0b',
+              purple: '#8b5cf6',
+            }
+          },
+          boxShadow: {
+            'glow': '0 0 50px -10px rgba(37, 99, 235, 0.25)',
+            'glow-lg': '0 0 80px -15px rgba(37, 99, 235, 0.35)',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Smooth custom styling */
+    .bg-grid-pattern {
+      background-size: 40px 40px;
+      background-image: 
+        linear-gradient(to right, rgba(226, 232, 240, 0.6) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(226, 232, 240, 0.6) 1px, transparent 1px);
+    }
+    .dark .bg-grid-pattern {
+      background-image: 
+        linear-gradient(to right, rgba(30, 41, 59, 0.4) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(30, 41, 59, 0.4) 1px, transparent 1px);
+    }
+    .glass-nav {
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+    /* Hide scrollbar for gallery on mobile */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased selection:bg-brand-500 selection:text-white">
+
+  <!-- ================= NAVBAR ================= -->
+  <header class="fixed top-0 left-0 right-0 z-50 transition-all duration-300" id="navbar">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-20 px-6 my-2 rounded-2xl bg-white/85 glass-nav border border-slate-200/80 shadow-sm transition-all duration-300">
+        
+        <!-- Logo & Title -->
+        <a href="#" class="flex items-center gap-3 group">
+          <div class="relative w-11 h-11 rounded-xl overflow-hidden shadow-md group-hover:scale-105 transition-transform duration-200 bg-white p-1 border border-slate-100">
+            <img src="assets/icon.png" alt="ÖğretmenCep Logo" class="w-full h-full object-contain rounded-lg">
+          </div>
+          <div class="flex flex-col">
+            <span class="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-1.5">
+              Öğretmen<span class="text-brand-600">Cep</span>
+              <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 tracking-wide">v1.0.7</span>
+            </span>
+            <span class="text-xs text-slate-500 font-medium -mt-1 hidden sm:block">Akıllı Sınıf & Ders Asistanı</span>
+          </div>
+        </a>
+
+        <!-- Desktop Navigation -->
+        <nav class="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-600">
+          <a href="#ozellikler" class="hover:text-brand-600 transition-colors">Özellikler</a>
+          <a href="#ekranlar" class="hover:text-brand-600 transition-colors">Ekran Görüntüleri</a>
+          <a href="#video" class="hover:text-brand-600 transition-colors flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+            Tanıtım Videosu
+          </a>
+          <a href="#guvenlik" class="hover:text-brand-600 transition-colors">Güvenlik & Gizlilik</a>
+          <a href="#sss" class="hover:text-brand-600 transition-colors">S.S.S.</a>
+        </nav>
+
+        <!-- Right Action Buttons -->
+        <div class="flex items-center gap-3">
+          <!-- GitHub Link -->
+          <a href="https://github.com/soft41com/ogretmencep" target="_blank" rel="noopener noreferrer" 
+             class="p-2.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all duration-200" 
+             title="GitHub'da İncele">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd" />
+            </svg>
+          </a>
+
+          <!-- Google Play Download CTA -->
+          <a href="https://play.google.com/store/apps/details?id=com.ogretmencep.app" target="_blank" rel="noopener noreferrer" 
+             class="inline-flex items-center gap-2 bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800 text-white font-semibold text-sm px-4 py-2.5 rounded-xl shadow-md shadow-brand-500/25 hover:shadow-lg hover:shadow-brand-500/35 hover:-translate-y-0.5 transition-all duration-200">
+            <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+              <path d="M3.609 1.814L13.793 12 3.61 22.186c-.378-.363-.61-.873-.61-1.44V3.254c0-.568.232-1.077.609-1.44zm11.373 11.374l2.585-2.585-12.756-7.37 10.171 9.955zm2.586-3.776l3.358 1.94c.944.545.944 1.433 0 1.978l-3.358 1.94-2.227-2.228 2.227-1.63zm-3.775 5.364l-10.17 9.954 12.756-7.37-2.586-2.584z"/>
+            </svg>
+            <span class="hidden sm:inline">Play Store'dan</span> İndir
+          </a>
+
+          <!-- Mobile Menu Button -->
+          <button id="mobileMenuBtn" class="md:hidden p-2 text-slate-600 hover:text-slate-900 rounded-xl hover:bg-slate-100 transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Mobile Dropdown Menu -->
+      <div id="mobileMenu" class="hidden md:hidden px-6 py-4 rounded-2xl bg-white/95 glass-nav border border-slate-200/80 shadow-lg mt-2 flex flex-col gap-3 font-semibold text-slate-700">
+        <a href="#ozellikler" class="py-2 hover:text-brand-600 transition-colors">Özellikler</a>
+        <a href="#ekranlar" class="py-2 hover:text-brand-600 transition-colors">Ekran Görüntüleri</a>
+        <a href="#video" class="py-2 hover:text-brand-600 transition-colors text-red-600 flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+          Tanıtım Videosu (Yakında)
+        </a>
+        <a href="#guvenlik" class="py-2 hover:text-brand-600 transition-colors">Güvenlik & Gizlilik</a>
+        <a href="#sss" class="py-2 hover:text-brand-600 transition-colors">Sıkça Sorulan Sorular</a>
+        <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
+          <a href="https://github.com/soft41com/ogretmencep" target="_blank" class="text-sm text-slate-500 hover:text-slate-900 flex items-center gap-1.5">
+            GitHub Projesi
+          </a>
+          <span class="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded">Sürüm 1.0.7</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= HERO SECTION ================= -->
+  <section class="relative pt-36 pb-20 md:pt-44 md:pb-32 overflow-hidden bg-grid-pattern">
+    <!-- Ambient Blur Gradients -->
+    <div class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-tr from-brand-300/30 to-indigo-300/20 rounded-full blur-3xl pointer-events-none -z-10"></div>
+    <div class="absolute top-1/3 right-10 w-96 h-96 bg-emerald-200/20 rounded-full blur-3xl pointer-events-none -z-10"></div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+        
+        <!-- Left Content -->
+        <div class="lg:col-span-7 text-center lg:text-left space-y-6">
+          
+          <!-- Badge -->
+          <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand-50 border border-brand-200/80 text-brand-700 text-xs sm:text-sm font-semibold shadow-sm">
+            <span class="flex h-2 w-2 relative">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            Google Play Store'da Yayında • v1.0.7
+          </div>
+
+          <!-- Main Headline -->
+          <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-[1.15]">
+            Öğretmenler İçin <br class="hidden sm:inline" />
+            <span class="bg-gradient-to-r from-brand-600 via-indigo-600 to-brand-800 bg-clip-text text-transparent">
+              Akıllı, Hızlı ve %100 Çevrimdışı
+            </span><br />
+            Sınıf Yönetimi
+          </h1>
+
+          <!-- Subtitle -->
+          <p class="text-base sm:text-lg text-slate-600 font-normal leading-relaxed max-w-2xl mx-auto lg:mx-0">
+            Ders programı takibi, tek tıkla yoklama, öğrenci performans (+/-) değerlendirmesi, sınav notları, 36 haftalık yıllık planlar ve Excel aktarımı... Kağıt işlerine veda edin, tüm sınıf kontrolünü cebinize taşıyın.
+          </p>
+
+          <!-- Action Buttons -->
+          <div class="pt-4 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
+            
+            <!-- Google Play Official Button -->
+            <a href="https://play.google.com/store/apps/details?id=com.ogretmencep.app" target="_blank" rel="noopener noreferrer" 
+               class="group relative inline-flex items-center gap-3 bg-slate-900 hover:bg-black text-white px-6 py-3.5 rounded-2xl shadow-xl shadow-slate-900/15 hover:shadow-2xl hover:-translate-y-0.5 transition-all duration-200 w-full sm:w-auto justify-center">
+              <svg class="w-7 h-7 fill-current group-hover:scale-110 transition-transform" viewBox="0 0 24 24">
+                <path d="M3.609 1.814L13.793 12 3.61 22.186c-.378-.363-.61-.873-.61-1.44V3.254c0-.568.232-1.077.609-1.44zm11.373 11.374l2.585-2.585-12.756-7.37 10.171 9.955zm2.586-3.776l3.358 1.94c.944.545.944 1.433 0 1.978l-3.358 1.94-2.227-2.228 2.227-1.63zm-3.775 5.364l-10.17 9.954 12.756-7.37-2.586-2.584z"/>
+              </svg>
+              <div class="text-left">
+                <div class="text-[10px] font-medium tracking-wider uppercase text-slate-300">HEMEN İNDİRİN</div>
+                <div class="text-base font-bold tracking-tight text-white leading-tight">Google Play</div>
+              </div>
+            </a>
+
+            <!-- GitHub Project Button -->
+            <a href="https://github.com/soft41com/ogretmencep" target="_blank" rel="noopener noreferrer"
+               class="inline-flex items-center gap-2.5 bg-white hover:bg-slate-50 text-slate-800 font-semibold text-sm px-6 py-3.5 rounded-2xl border border-slate-300 shadow-sm hover:shadow transition-all duration-200 w-full sm:w-auto justify-center">
+              <svg class="w-5 h-5 text-slate-700" fill="currentColor" viewBox="0 0 24 24">
+                <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd" />
+              </svg>
+              GitHub'da Görüntüle
+            </a>
+
+            <!-- Video Watch Button Anchor -->
+            <a href="#video" class="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-slate-600 hover:text-brand-600 px-3 py-2 transition-colors">
+              <svg class="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z"/>
+              </svg>
+              Tanıtım Videosunu Gör
+            </a>
+          </div>
+
+          <!-- Feature Bullets (Trust markers) -->
+          <div class="pt-6 grid grid-cols-2 sm:grid-cols-3 gap-4 text-left border-t border-slate-200/70">
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              </div>
+              <span class="text-xs sm:text-sm font-semibold text-slate-700">%100 Çevrimdışı (Offline SQLite)</span>
+            </div>
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-lg bg-brand-100 text-brand-600 flex items-center justify-center shrink-0">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+              </div>
+              <span class="text-xs sm:text-sm font-semibold text-slate-700">Sıfır Bulut / Tam Gizlilik</span>
+            </div>
+            <div class="flex items-center gap-2.5 col-span-2 sm:col-span-1">
+              <div class="w-8 h-8 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+              </div>
+              <span class="text-xs sm:text-sm font-semibold text-slate-700">1 Tıkla Excel / e-Okul</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Right Phone Mockup -->
+        <div class="lg:col-span-5 relative flex justify-center">
+          
+          <!-- Background Glow Effect -->
+          <div class="absolute inset-0 bg-gradient-to-tr from-brand-600 to-indigo-600 rounded-[3rem] filter blur-3xl opacity-20 transform -rotate-6 scale-95"></div>
+
+          <!-- Realistic Phone Wrapper -->
+          <div class="relative w-[290px] sm:w-[320px] rounded-[42px] p-3.5 bg-slate-900 shadow-2xl shadow-slate-900/40 ring-1 ring-slate-800 border-4 border-slate-700/60 transform hover:scale-[1.02] transition-transform duration-300">
+            
+            <!-- Dynamic Island / Speaker Notch -->
+            <div class="absolute top-5 left-1/2 -translate-x-1/2 w-28 h-4 bg-slate-950 rounded-full z-20 flex items-center justify-center">
+              <div class="w-3 h-3 rounded-full bg-slate-800 mr-2"></div>
+              <div class="w-2 h-2 rounded-full bg-blue-950"></div>
+            </div>
+
+            <!-- Screen Container -->
+            <div class="relative rounded-[32px] overflow-hidden bg-slate-100 aspect-[9/19] border border-slate-800">
+              <img src="assets/screenshot_1.png" alt="ÖğretmenCep Ana Ekranı" class="w-full h-full object-cover">
+            </div>
+
+            <!-- Floating Badge Left: Canlı Ders -->
+            <div class="absolute -left-6 top-24 bg-white/95 glass-nav p-3 rounded-2xl shadow-xl border border-slate-200/90 hidden sm:flex items-center gap-3 animate-bounce [animation-duration:4s]">
+              <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              </div>
+              <div>
+                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">CANLI DERS</div>
+                <div class="text-xs font-bold text-slate-800">9-A / Matematik</div>
+              </div>
+            </div>
+
+            <!-- Floating Badge Right: Yoklama Alındı -->
+            <div class="absolute -right-6 bottom-28 bg-white/95 glass-nav p-3 rounded-2xl shadow-xl border border-slate-200/90 hidden sm:flex items-center gap-3 animate-bounce [animation-duration:5s]">
+              <div class="w-10 h-10 rounded-xl bg-brand-100 text-brand-600 flex items-center justify-center">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              </div>
+              <div>
+                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">HIZLI YOKLAMA</div>
+                <div class="text-xs font-bold text-slate-800">Tek Tıkla Kayıt</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= TRUST / METRICS BANNER ================= -->
+  <section class="py-12 bg-white border-y border-slate-200/80">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center divide-x-0 md:divide-x divide-slate-100">
+        
+        <div class="space-y-1">
+          <div class="text-3xl lg:text-4xl font-extrabold text-brand-600 tracking-tight">%100</div>
+          <div class="text-xs sm:text-sm font-medium text-slate-500">Çevrimdışı & İnternetsiz</div>
+        </div>
+
+        <div class="space-y-1">
+          <div class="text-3xl lg:text-4xl font-extrabold text-emerald-600 tracking-tight">0 Bayt</div>
+          <div class="text-xs sm:text-sm font-medium text-slate-500">Dış Sunucuya Veri Çıkışı</div>
+        </div>
+
+        <div class="space-y-1">
+          <div class="text-3xl lg:text-4xl font-extrabold text-indigo-600 tracking-tight">30 Saniye</div>
+          <div class="text-xs sm:text-sm font-medium text-slate-500">Haftalık Program Doldurma</div>
+        </div>
+
+        <div class="space-y-1">
+          <div class="text-3xl lg:text-4xl font-extrabold text-amber-600 tracking-tight">MEB</div>
+          <div class="text-xs sm:text-sm font-medium text-slate-500">Müfredat & e-Okul Uyumlu</div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= ÖZELLİKLER SECTION ================= -->
+  <section id="ozellikler" class="py-24 bg-slate-50 relative">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <!-- Section Header -->
+      <div class="text-center max-w-3xl mx-auto mb-16 space-y-4">
+        <span class="text-xs font-bold text-brand-600 uppercase tracking-widest bg-brand-50 px-3 py-1 rounded-full border border-brand-100">
+          ÖĞRETMENLER İÇİN ÖZEL GELİŞTİRİLDİ
+        </span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+          Sınıfınızdaki Tüm İhtiyaçlar Tek Bir Uygulamada
+        </h2>
+        <p class="text-slate-600 text-base sm:text-lg">
+          Ders zili çaldığında hazır olun. Karmaşık menüler ve gereksiz formlar yerine tek dokunuşla çalışan pratik öğretmen araçları.
+        </p>
+      </div>
+
+      <!-- Feature Grid -->
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        
+        <!-- Feature 1: Canlı Ders Programı -->
+        <div class="bg-white rounded-3xl p-8 border border-slate-200/80 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between group">
+          <div class="space-y-4">
+            <div class="w-14 h-14 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center group-hover:scale-110 group-hover:bg-brand-600 group-hover:text-white transition-all duration-300">
+              <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            </div>
+            <h3 class="text-xl font-bold text-slate-900">Canlı & Günlük Ders Akışı</h3>
+            <p class="text-slate-600 text-sm leading-relaxed">
+              Zil saatlerine duyarlı akıllı ana ekran kartı ile şu an hangi sınıfta olduğunuzu, bir sonraki dersinizi ve kalan süreyi tek bakışta görün.
+            </p>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-100 flex items-center gap-2 text-xs font-semibold text-brand-600">
+            <span>Tek tıkla derse yoklama al</span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </div>
+        </div>
+
+        <!-- Feature 2: 5x8 Hızlı Damga Matrisi -->
+        <div class="bg-white rounded-3xl p-8 border border-slate-200/80 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between group">
+          <div class="space-y-4">
+            <div class="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center group-hover:scale-110 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300">
+              <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+            </div>
+            <h3 class="text-xl font-bold text-slate-900">Hızlı Damga (Matris) Modu</h3>
+            <p class="text-slate-600 text-sm leading-relaxed">
+              5 Gün x 8 Ders Saati interaktif ders matrisi. Sınıf ve dersinizi seçip hücrelere dokunarak tüm haftalık programı 30 saniyede zahmetsizce doldurun.
+            </p>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-100 flex items-center gap-2 text-xs font-semibold text-indigo-600">
+            <span>Toplu metin yapıştırma desteği</span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </div>
+        </div>
+
+        <!-- Feature 3: Pratik Yoklama -->
+        <div class="bg-white rounded-3xl p-8 border border-slate-200/80 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between group">
+          <div class="space-y-4">
+            <div class="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-110 group-hover:bg-emerald-600 group-hover:text-white transition-all duration-300">
+              <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <h3 class="text-xl font-bold text-slate-900">Tek Tıkla Hızlı Yoklama</h3>
+            <p class="text-slate-600 text-sm leading-relaxed">
+              "Tümünü Geldi Yap" butonu ile saniyeler kazanın. Gelmedi, Geç, İzinli ve Raporlu durumlarını tek dokunuşla kaydedin. Günlük devamsızlık özetini görün.
+            </p>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-100 flex items-center gap-2 text-xs font-semibold text-emerald-600">
+            <span>Geçmişe dönük takvim arşivi</span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </div>
+        </div>
+
+        <!-- Feature 4: e-Okul & Excel İçe/Dışa Aktarma -->
+        <div class="bg-white rounded-3xl p-8 border border-slate-200/80 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between group">
+          <div class="space-y-4">
+            <div class="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center group-hover:scale-110 group-hover:bg-amber-600 group-hover:text-white transition-all duration-300">
+              <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            </div>
+            <h3 class="text-xl font-bold text-slate-900">Excel & e-Okul Kolaylığı</h3>
+            <p class="text-slate-600 text-sm leading-relaxed">
+              Öğrenci listelerini tek tek elle yazmak yok. e-Okul veya Excel'den kopyaladığınız listeyi yapıştırın, saniyeler içinde tüm sınıfınız fotoğraflarıyla hazır olsun.
+            </p>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-100 flex items-center gap-2 text-xs font-semibold text-amber-600">
+            <span>Tek dokunuşla Excel çıktısı al</span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </div>
+        </div>
+
+        <!-- Feature 5: Kim Kalksın & +/- Puanlama -->
+        <div class="bg-white rounded-3xl p-8 border border-slate-200/80 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between group">
+          <div class="space-y-4">
+            <div class="w-14 h-14 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center group-hover:scale-110 group-hover:bg-purple-600 group-hover:text-white transition-all duration-300">
+              <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <h3 class="text-xl font-bold text-slate-900">"Kim Kalksın?" & Puanlama</h3>
+            <p class="text-slate-600 text-sm leading-relaxed">
+              Tahtaya kaldırmak için animasyonlu rastgele kura çekin. Dersteki sözlü performanslara anında (+1 / -1) vererek öğrenci akışında davranış notları tutun.
+            </p>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-100 flex items-center gap-2 text-xs font-semibold text-purple-600">
+            <span>Adil ve eğlenceli sınıf içi kura</span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </div>
+        </div>
+
+        <!-- Feature 6: 36 Haftalık MEB Planları -->
+        <div class="bg-white rounded-3xl p-8 border border-slate-200/80 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between group">
+          <div class="space-y-4">
+            <div class="w-14 h-14 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center group-hover:scale-110 group-hover:bg-rose-600 group-hover:text-white transition-all duration-300">
+              <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+            </div>
+            <h3 class="text-xl font-bold text-slate-900">36 Haftalık Yıllık Planlar</h3>
+            <p class="text-slate-600 text-sm leading-relaxed">
+              Müfredat konularını ve kazanımlarını haftalık olarak izleyin. Tamamlanan haftaları onaylayın; hangi sınıfta nerede kaldığınızı asla unutmayın.
+            </p>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-100 flex items-center gap-2 text-xs font-semibold text-rose-600">
+            <span>Ders defteri doldurma kolaylığı</span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ================= EKRAN GÖRÜNTÜLERİ GALLERY ================= -->
+  <section id="ekranlar" class="py-24 bg-white border-y border-slate-200/80">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <!-- Section Header -->
+      <div class="text-center max-w-3xl mx-auto mb-12 space-y-4">
+        <span class="text-xs font-bold text-brand-600 uppercase tracking-widest bg-brand-50 px-3 py-1 rounded-full border border-brand-100">
+          UYGULAMAYI YAKINDAN İNCELEYİN
+        </span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+          Sade, Modern ve Göz Yormayan Tasarım
+        </h2>
+        <p class="text-slate-600 text-base sm:text-lg">
+          Google Play Store'daki resmi ekran görüntüleri. Resimlerin üzerine tıklayarak tam boyutta inceleyebilirsiniz.
+        </p>
+      </div>
+
+      <!-- Screenshot Showcase Grid / Carousel -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
+        
+        <!-- Shot 1 -->
+        <div class="group relative rounded-3xl p-2 bg-slate-900 shadow-lg hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 cursor-pointer overflow-hidden" onclick="openLightbox('assets/screenshot_1.png', 'Canlı Ders & Ana Ekran')">
+          <div class="rounded-2xl overflow-hidden aspect-[9/16] bg-slate-100">
+            <img src="assets/screenshot_1.png" alt="ÖğretmenCep Ana Ekran" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+          </div>
+          <div class="p-3 text-center">
+            <div class="text-xs font-bold text-white tracking-tight">Ana Ekran & Ders Akışı</div>
+            <div class="text-[10px] text-slate-400">Canlı zil ve sonraki ders kartı</div>
+          </div>
+        </div>
+
+        <!-- Shot 2 -->
+        <div class="group relative rounded-3xl p-2 bg-slate-900 shadow-lg hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 cursor-pointer overflow-hidden" onclick="openLightbox('assets/screenshot_2.png', 'Hızlı Damga Ders Matrisi')">
+          <div class="rounded-2xl overflow-hidden aspect-[9/16] bg-slate-100">
+            <img src="assets/screenshot_2.png" alt="Hızlı Damga Ders Matrisi" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+          </div>
+          <div class="p-3 text-center">
+            <div class="text-xs font-bold text-white tracking-tight">Ders Programı Matrisi</div>
+            <div class="text-[10px] text-slate-400">30 saniyede hızlı damgalama</div>
+          </div>
+        </div>
+
+        <!-- Shot 3 -->
+        <div class="group relative rounded-3xl p-2 bg-slate-900 shadow-lg hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 cursor-pointer overflow-hidden" onclick="openLightbox('assets/screenshot_3.png', 'Sınıf & Öğrenci Yönetimi')">
+          <div class="rounded-2xl overflow-hidden aspect-[9/16] bg-slate-100">
+            <img src="assets/screenshot_3.png" alt="Sınıf & Öğrenci Yönetimi" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+          </div>
+          <div class="p-3 text-center">
+            <div class="text-xs font-bold text-white tracking-tight">Sınıflar & Öğrenciler</div>
+            <div class="text-[10px] text-slate-400">Akıllı arama ve fotoğraflı liste</div>
+          </div>
+        </div>
+
+        <!-- Shot 4 -->
+        <div class="group relative rounded-3xl p-2 bg-slate-900 shadow-lg hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 cursor-pointer overflow-hidden" onclick="openLightbox('assets/screenshot_4.png', 'Hızlı Yoklama Modülü')">
+          <div class="rounded-2xl overflow-hidden aspect-[9/16] bg-slate-100">
+            <img src="assets/screenshot_4.png" alt="Hızlı Yoklama Modülü" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+          </div>
+          <div class="p-3 text-center">
+            <div class="text-xs font-bold text-white tracking-tight">Pratik Yoklama</div>
+            <div class="text-[10px] text-slate-400">Tümünü Geldi Yap & İstatistik</div>
+          </div>
+        </div>
+
+        <!-- Shot 5 -->
+        <div class="group relative rounded-3xl p-2 bg-slate-900 shadow-lg hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 cursor-pointer overflow-hidden" onclick="openLightbox('assets/screenshot_5.png', 'Sınavlar ve Not Çizelgesi')">
+          <div class="rounded-2xl overflow-hidden aspect-[9/16] bg-slate-100">
+            <img src="assets/screenshot_5.png" alt="Sınavlar ve Not Girişi" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+          </div>
+          <div class="p-3 text-center">
+            <div class="text-xs font-bold text-white tracking-tight">Sınavlar & Not Girişi</div>
+            <div class="text-[10px] text-slate-400">Yazılı/Sözlü & Otomatik Ortalama</div>
+          </div>
+        </div>
+
+        <!-- Shot 6 -->
+        <div class="group relative rounded-3xl p-2 bg-slate-900 shadow-lg hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 cursor-pointer overflow-hidden" onclick="openLightbox('assets/screenshot_6.png', '36 Haftalık Yıllık Planlar')">
+          <div class="rounded-2xl overflow-hidden aspect-[9/16] bg-slate-100">
+            <img src="assets/screenshot_6.png" alt="Yıllık Planlar" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+          </div>
+          <div class="p-3 text-center">
+            <div class="text-xs font-bold text-white tracking-tight">Yıllık Ders Planları</div>
+            <div class="text-[10px] text-slate-400">MEB kazanım & hafta takibi</div>
+          </div>
+        </div>
+
+        <!-- Shot 7 -->
+        <div class="group relative rounded-3xl p-2 bg-slate-900 shadow-lg hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 cursor-pointer overflow-hidden" onclick="openLightbox('assets/screenshot_7.png', 'Ayarlar ve Yerel Yedekleme')">
+          <div class="rounded-2xl overflow-hidden aspect-[9/16] bg-slate-100">
+            <img src="assets/screenshot_7.png" alt="Ayarlar ve Yedekleme" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+          </div>
+          <div class="p-3 text-center">
+            <div class="text-xs font-bold text-white tracking-tight">Ayarlar & Yedekleme</div>
+            <div class="text-[10px] text-slate-400">Tek tıkla SQLite/JSON dışa aktar</div>
+          </div>
+        </div>
+
+        <!-- Shot 8: Feature Graphic Card -->
+        <div class="group relative rounded-3xl p-2 bg-slate-900 shadow-lg hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 cursor-pointer overflow-hidden flex flex-col justify-between" onclick="openLightbox('assets/feature_graphic.png', 'Google Play Özellik Grafiği')">
+          <div class="rounded-2xl overflow-hidden aspect-[9/16] bg-slate-950 flex items-center justify-center">
+            <img src="assets/feature_graphic.png" alt="Google Play Banner" class="w-full h-auto object-contain group-hover:scale-105 transition-transform duration-300">
+          </div>
+          <div class="p-3 text-center">
+            <div class="text-xs font-bold text-white tracking-tight">Google Play Vitrini</div>
+            <div class="text-[10px] text-slate-400">Resmi Mağaza Özellik Grafiği</div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ================= YOUTUBE VIDEO SECTION ================= -->
+  <section id="video" class="py-24 bg-gradient-to-b from-slate-900 to-slate-950 text-white relative overflow-hidden">
+    
+    <!-- Background Decor -->
+    <div class="absolute inset-0 bg-grid-pattern opacity-10"></div>
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-red-600/10 rounded-full blur-3xl pointer-events-none"></div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      
+      <!-- Section Header -->
+      <div class="text-center max-w-3xl mx-auto mb-14 space-y-4">
+        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-red-950/80 border border-red-500/40 text-red-400 text-xs sm:text-sm font-semibold">
+          <svg class="w-4 h-4 fill-current text-red-500" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+          YOUTUBE TANITIM & KULLANIM REHBERİ
+        </div>
+        <h2 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight">
+          Adım Adım ÖğretmenCep Rehberi
+        </h2>
+        <p class="text-slate-400 text-base sm:text-lg">
+          Uygulamanın tüm özelliklerini, e-Okul'dan öğrenci aktarımını ve ders matrisinin kullanımını anlatan detaylı tanıtım videomuz çok yakında YouTube'da yayınlanıyor!
+        </p>
+      </div>
+
+      <!-- Video Card Preview -->
+      <div class="max-w-4xl mx-auto">
+        <div class="relative rounded-3xl overflow-hidden shadow-2xl border border-slate-800 bg-slate-900 group">
+          
+          <!-- Thumbnail Background Image -->
+          <div class="relative aspect-[16/9] w-full overflow-hidden">
+            <img src="assets/feature_graphic.png" alt="ÖğretmenCep Tanıtım Videosu Önizleme" class="w-full h-full object-cover filter brightness-[0.7] group-hover:scale-105 group-hover:brightness-[0.8] transition-all duration-500">
+            
+            <!-- Video Overlay Gradient -->
+            <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
+
+            <!-- Big Glowing Animated Play Button -->
+            <div class="absolute inset-0 flex items-center justify-center">
+              <button onclick="showVideoModal()" class="relative group/btn flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-red-600 text-white shadow-2xl shadow-red-600/50 hover:scale-110 active:scale-95 transition-all duration-300">
+                <!-- Ping Wave -->
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-60"></span>
+                <svg class="w-8 h-8 sm:w-10 sm:h-10 fill-current ml-1" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z"/>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Bottom Video Badge & Info -->
+            <div class="absolute bottom-6 left-6 right-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <span class="inline-block text-[11px] font-extrabold px-3 py-1 rounded-full bg-red-600/90 text-white uppercase tracking-wider mb-2">
+                  ÇOK YAKINDA YAYINDA
+                </span>
+                <h3 class="text-xl sm:text-2xl font-bold text-white tracking-tight">
+                  Öğretmenler İçin 5 Dakikada Tam Kurulum ve Kullanım Eğitimi
+                </h3>
+              </div>
+              <button onclick="showVideoModal()" class="shrink-0 bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-semibold px-4 py-2.5 rounded-xl backdrop-blur-md transition-colors">
+                Haberdar Ol
+              </button>
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- Note below video -->
+        <div class="mt-6 text-center text-xs sm:text-sm text-slate-400 flex items-center justify-center gap-2">
+          <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          Video yayınlandığında doğrudan bu bölümden tek tıkla izlenebilecektir.
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ================= GÜVENLİK & GİZLİLİK SECTION ================= -->
+  <section id="guvenlik" class="py-24 bg-slate-50 relative">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="bg-gradient-to-br from-slate-900 to-brand-950 rounded-[2.5rem] p-8 sm:p-12 lg:p-16 text-white shadow-2xl relative overflow-hidden">
+        
+        <!-- Ambient Decor -->
+        <div class="absolute -right-20 -bottom-20 w-80 h-80 bg-brand-500/10 rounded-full blur-3xl"></div>
+
+        <div class="grid lg:grid-cols-12 gap-10 items-center">
+          
+          <div class="lg:col-span-8 space-y-6">
+            <span class="text-xs font-bold text-emerald-400 uppercase tracking-widest bg-emerald-950/80 px-3.5 py-1 rounded-full border border-emerald-500/30">
+              KVKK & VERİ GİZLİLİĞİ TAAHHÜDÜ
+            </span>
+            <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight">
+              Öğrencilerinizin ve Sizin Verileriniz Sadece Sizin Telefonunuzda
+            </h2>
+            <p class="text-slate-300 text-base sm:text-lg leading-relaxed">
+              ÖğretmenCep, hiçbir harici sunucuya veya bulut servisine bağlanmaz. Öğrenci isimleri, numaraları, devamsızlıklar ve sınav notları telefonunuzun yerel SQLite hafızasında güvenle saklanır.
+            </p>
+
+            <div class="grid sm:grid-cols-2 gap-4 pt-2">
+              <div class="flex items-start gap-3">
+                <div class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">✓</div>
+                <span class="text-sm text-slate-300">İnternet bağlantısı olmasa dahi %100 kesintisiz çalışma</span>
+              </div>
+              <div class="flex items-start gap-3">
+                <div class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">✓</div>
+                <span class="text-sm text-slate-300">Kullanıcı kaydı veya şifre gerektirmez</span>
+              </div>
+              <div class="flex items-start gap-3">
+                <div class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">✓</div>
+                <span class="text-sm text-slate-300">Reklamsız ve izleyicisiz saf öğretmen deneyimi</span>
+              </div>
+              <div class="flex items-start gap-3">
+                <div class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">✓</div>
+                <span class="text-sm text-slate-300">İstediğiniz zaman tek dokunuşla tüm verileri silme veya yedekleme</span>
+              </div>
+            </div>
+
+            <div class="pt-4 flex flex-wrap items-center gap-4">
+              <button onclick="openPrivacyModal()" class="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white font-semibold text-sm px-5 py-3 rounded-xl border border-white/20 transition-all">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                Gizlilik Politikasını Oku
+              </button>
+              <a href="https://github.com/soft41com/ogretmencep/blob/main/GIZLILIK_POLITIKASI.md" target="_blank" class="text-xs text-slate-400 hover:text-white underline underline-offset-4">
+                GitHub'da Gizlilik Metnini İncele
+              </a>
+            </div>
+
+          </div>
+
+          <!-- Shield Icon Graphic -->
+          <div class="lg:col-span-4 flex justify-center">
+            <div class="w-48 h-48 sm:w-56 sm:h-56 rounded-3xl bg-emerald-500/10 border-2 border-emerald-500/30 flex items-center justify-center text-emerald-400 shadow-2xl relative">
+              <div class="absolute inset-4 rounded-2xl bg-emerald-500/10 animate-pulse"></div>
+              <svg class="w-24 h-24 sm:w-28 sm:h-28 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ================= S.S.S. SECTION ================= -->
+  <section id="sss" class="py-24 bg-white">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center mb-16 space-y-4">
+        <span class="text-xs font-bold text-brand-600 uppercase tracking-widest bg-brand-50 px-3 py-1 rounded-full border border-brand-100">
+          AKLINIZA TAKILANLAR
+        </span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+          Sıkça Sorulan Sorular
+        </h2>
+        <p class="text-slate-600 text-base">
+          ÖğretmenCep hakkında en çok merak edilen sorular ve cevapları.
+        </p>
+      </div>
+
+      <!-- Accordion Items -->
+      <div class="space-y-4" id="faqAccordion">
+        
+        <!-- Item 1 -->
+        <div class="border border-slate-200 rounded-2xl overflow-hidden transition-all duration-200">
+          <button class="w-full flex items-center justify-between p-6 text-left font-bold text-slate-800 hover:text-brand-600 transition-colors focus:outline-none" onclick="toggleFaq(this)">
+            <span class="text-base sm:text-lg">Uygulamayı kullanmak için internet bağlantısı gerekir mi?</span>
+            <svg class="w-5 h-5 transform transition-transform duration-200 text-slate-400 shrink-0 ml-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </button>
+          <div class="hidden px-6 pb-6 text-slate-600 text-sm leading-relaxed border-t border-slate-100 pt-4">
+            Hayır, kesinlikle gerekmez. ÖğretmenCep %100 çevrimdışı (offline) çalışacak şekilde tasarlanmıştır. Okulun bodrum katında veya internetin çekmediği yerlerde bile tüm fonksiyonlar tam performansla çalışır.
+          </div>
+        </div>
+
+        <!-- Item 2 -->
+        <div class="border border-slate-200 rounded-2xl overflow-hidden transition-all duration-200">
+          <button class="w-full flex items-center justify-between p-6 text-left font-bold text-slate-800 hover:text-brand-600 transition-colors focus:outline-none" onclick="toggleFaq(this)">
+            <span class="text-base sm:text-lg">e-Okul veya Excel'den öğrenci listesini nasıl aktarabilirim?</span>
+            <svg class="w-5 h-5 transform transition-transform duration-200 text-slate-400 shrink-0 ml-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </button>
+          <div class="hidden px-6 pb-6 text-slate-600 text-sm leading-relaxed border-t border-slate-100 pt-4">
+            Sınıf detay ekranında yer alan "Toplu Öğrenci Aktar" butonuna tıkladıktan sonra, e-Okul veya Excel listenizden kopyaladığınız satırları kutuya yapıştırmanız yeterlidir. Uygulama numara, ad ve soyadı otomatik olarak ayıklar ve tek tıkla kaydeder.
+          </div>
+        </div>
+
+        <!-- Item 3 -->
+        <div class="border border-slate-200 rounded-2xl overflow-hidden transition-all duration-200">
+          <button class="w-full flex items-center justify-between p-6 text-left font-bold text-slate-800 hover:text-brand-600 transition-colors focus:outline-none" onclick="toggleFaq(this)">
+            <span class="text-base sm:text-lg">Telefonumu değiştirdiğimde verilerimi yeni cihaza nasıl aktarırım?</span>
+            <svg class="w-5 h-5 transform transition-transform duration-200 text-slate-400 shrink-0 ml-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </button>
+          <div class="hidden px-6 pb-6 text-slate-600 text-sm leading-relaxed border-t border-slate-100 pt-4">
+            Ayarlar ekranında bulunan "Veritabanını Yedekle" seçeneğine dokunarak tüm verilerinizi (SQLite veya JSON formatında) telefonunuza kaydedebilir; WhatsApp, Google Drive veya e-posta yoluyla yeni cihazınıza gönderip "Yedeği Geri Yükle" diyerek saniyeler içinde geri yükleyebilirsiniz.
+          </div>
+        </div>
+
+        <!-- Item 4 -->
+        <div class="border border-slate-200 rounded-2xl overflow-hidden transition-all duration-200">
+          <button class="w-full flex items-center justify-between p-6 text-left font-bold text-slate-800 hover:text-brand-600 transition-colors focus:outline-none" onclick="toggleFaq(this)">
+            <span class="text-base sm:text-lg">Öğrencilerin fotoğraflarını ekleyebilir miyim?</span>
+            <svg class="w-5 h-5 transform transition-transform duration-200 text-slate-400 shrink-0 ml-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </button>
+          <div class="hidden px-6 pb-6 text-slate-600 text-sm leading-relaxed border-t border-slate-100 pt-4">
+            Evet. İster öğrenci profili içinden kamerayla anlık fotoğraf çekebilir, ister galeriden seçebilir, isterseniz "Toplu Fotoğraf Aktar" özelliğiyle okul numaralarına göre toplu fotoğrafları saniyeler içinde eşleştirebilirsiniz.
+          </div>
+        </div>
+
+        <!-- Item 5 -->
+        <div class="border border-slate-200 rounded-2xl overflow-hidden transition-all duration-200">
+          <button class="w-full flex items-center justify-between p-6 text-left font-bold text-slate-800 hover:text-brand-600 transition-colors focus:outline-none" onclick="toggleFaq(this)">
+            <span class="text-base sm:text-lg">Uygulama ücretli mi? Reklam içeriyor mu?</span>
+            <svg class="w-5 h-5 transform transition-transform duration-200 text-slate-400 shrink-0 ml-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </button>
+          <div class="hidden px-6 pb-6 text-slate-600 text-sm leading-relaxed border-t border-slate-100 pt-4">
+            Öğretmenlerimizin okulda ders esnasında dikkatlerinin dağılmaması için uygulamada hiçbir rahatsız edici reklam bulunmaz. Google Play üzerinden ücretsiz indirip hemen kullanmaya başlayabilirsiniz.
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ================= BIG CTA / DOWNLOAD BANNER ================= -->
+  <section class="py-20 bg-gradient-to-r from-brand-600 via-indigo-600 to-brand-800 text-white relative overflow-hidden">
+    <!-- Ambient Blur -->
+    <div class="absolute -top-24 -left-24 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
+    <div class="absolute -bottom-24 -right-24 w-96 h-96 bg-emerald-400/10 rounded-full blur-3xl"></div>
+
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10 space-y-8">
+      
+      <div class="w-20 h-20 mx-auto rounded-3xl bg-white p-2 shadow-2xl">
+        <img src="assets/icon.png" alt="ÖğretmenCep" class="w-full h-full object-contain rounded-2xl">
+      </div>
+
+      <div class="space-y-4 max-w-3xl mx-auto">
+        <h2 class="text-3xl sm:text-5xl font-extrabold tracking-tight">
+          Sınıfınızı Cebinizden Yönetmeye Bugün Başlayın
+        </h2>
+        <p class="text-blue-100 text-base sm:text-lg">
+          Google Play Store'dan hemen ücretsiz indirin. ÖğretmenCep ile derslerinizi düzenleyin, zaman kazanın ve eğitime odaklanın.
+        </p>
+      </div>
+
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
+        
+        <!-- Official Play Store Badge Button -->
+        <a href="https://play.google.com/store/apps/details?id=com.ogretmencep.app" target="_blank" rel="noopener noreferrer"
+           class="group inline-flex items-center gap-3 bg-slate-900 hover:bg-black text-white px-7 py-4 rounded-2xl shadow-2xl hover:scale-105 transition-all duration-200">
+          <svg class="w-7 h-7 fill-current group-hover:scale-110 transition-transform" viewBox="0 0 24 24">
+            <path d="M3.609 1.814L13.793 12 3.61 22.186c-.378-.363-.61-.873-.61-1.44V3.254c0-.568.232-1.077.609-1.44zm11.373 11.374l2.585-2.585-12.756-7.37 10.171 9.955zm2.586-3.776l3.358 1.94c.944.545.944 1.433 0 1.978l-3.358 1.94-2.227-2.228 2.227-1.63zm-3.775 5.364l-10.17 9.954 12.756-7.37-2.586-2.584z"/>
+          </svg>
+          <div class="text-left">
+            <div class="text-[10px] font-medium tracking-wider uppercase text-slate-300">GOOGLE PLAY'DEN</div>
+            <div class="text-base font-bold tracking-tight text-white leading-tight">Ücretsiz İndir</div>
+          </div>
+        </a>
+
+        <!-- GitHub Repo Button -->
+        <a href="https://github.com/soft41com/ogretmencep" target="_blank" rel="noopener noreferrer"
+           class="inline-flex items-center gap-2.5 bg-white/10 hover:bg-white/20 text-white font-semibold text-sm px-6 py-4 rounded-2xl border border-white/20 backdrop-blur-md transition-all duration-200">
+          <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+            <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd" />
+          </svg>
+          GitHub'da Yıldızla ★
+        </a>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ================= FOOTER ================= -->
+  <footer class="bg-slate-950 text-slate-400 py-16 border-t border-slate-900">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-10 pb-12 border-b border-slate-900">
+        
+        <!-- Col 1: Brand -->
+        <div class="md:col-span-5 space-y-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-white p-1">
+              <img src="assets/icon.png" alt="ÖğretmenCep Logo" class="w-full h-full object-contain rounded-lg">
+            </div>
+            <span class="text-xl font-extrabold text-white tracking-tight">
+              Öğretmen<span class="text-brand-500">Cep</span>
+            </span>
+          </div>
+          <p class="text-sm text-slate-400 leading-relaxed max-w-sm">
+            Öğretmenler için çevrimdışı, güvenli ve modern mobil sınıf asistanı. Sınıf defteri doldurma, yoklama alma ve not yönetimini dijitalleştirir.
+          </p>
+          <div class="text-xs text-slate-500">
+            Geliştirici: <span class="text-slate-300 font-semibold">soft41com</span> • Sedat Coşar
+          </div>
+        </div>
+
+        <!-- Col 2: Hızlı Bağlantılar -->
+        <div class="md:col-span-3 space-y-3">
+          <h4 class="text-xs font-bold text-slate-200 uppercase tracking-wider">Hızlı Gezinme</h4>
+          <ul class="space-y-2 text-sm">
+            <li><a href="#ozellikler" class="hover:text-white transition-colors">Özellikler</a></li>
+            <li><a href="#ekranlar" class="hover:text-white transition-colors">Ekran Görüntüleri</a></li>
+            <li><a href="#video" class="hover:text-white transition-colors">Tanıtım Videosu</a></li>
+            <li><a href="#guvenlik" class="hover:text-white transition-colors">Güvenlik ve KVKK</a></li>
+            <li><a href="#sss" class="hover:text-white transition-colors">Sıkça Sorulan Sorular</a></li>
+          </ul>
+        </div>
+
+        <!-- Col 3: Yasal & İndirme -->
+        <div class="md:col-span-4 space-y-3">
+          <h4 class="text-xs font-bold text-slate-200 uppercase tracking-wider">Mağaza ve Kaynaklar</h4>
+          <ul class="space-y-2 text-sm">
+            <li>
+              <a href="https://play.google.com/store/apps/details?id=com.ogretmencep.app" target="_blank" class="hover:text-white transition-colors flex items-center gap-2">
+                <span>Google Play Store Sayfası</span>
+                <span class="text-[10px] bg-brand-900 text-brand-300 px-1.5 py-0.5 rounded">v1.0.7</span>
+              </a>
+            </li>
+            <li>
+              <a href="https://github.com/soft41com/ogretmencep" target="_blank" class="hover:text-white transition-colors flex items-center gap-2">
+                <span>GitHub Kaynak Kodu</span>
+              </a>
+            </li>
+            <li>
+              <button onclick="openPrivacyModal()" class="hover:text-white transition-colors text-left">
+                Gizlilik Politikası (Privacy Policy)
+              </button>
+            </li>
+          </ul>
+        </div>
+
+      </div>
+
+      <!-- Bottom Bar -->
+      <div class="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+        <div>
+          © 2026 ÖğretmenCep. Tüm hakları saklıdır.
+        </div>
+        <div class="flex items-center gap-6">
+          <a href="https://play.google.com/store/apps/details?id=com.ogretmencep.app" target="_blank" class="hover:text-slate-400">Google Play</a>
+          <a href="https://github.com/soft41com/ogretmencep" target="_blank" class="hover:text-slate-400">GitHub</a>
+          <button onclick="openPrivacyModal()" class="hover:text-slate-400">Gizlilik</button>
+        </div>
+      </div>
+
+    </div>
+  </footer>
+
+  <!-- ================= LIGHTBOX MODAL ================= -->
+  <div id="lightboxModal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="relative max-w-4xl max-h-[90vh] flex flex-col items-center">
+      <button onclick="closeLightbox()" class="absolute -top-12 right-0 text-white/80 hover:text-white p-2 rounded-full focus:outline-none">
+        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+      <img id="lightboxImg" src="" alt="Önizleme" class="max-h-[80vh] w-auto rounded-2xl shadow-2xl object-contain">
+      <div id="lightboxCaption" class="mt-4 text-sm font-semibold text-white/90 bg-slate-900/80 px-4 py-1.5 rounded-full border border-slate-700"></div>
+    </div>
+  </div>
+
+  <!-- ================= VIDEO NOTICE MODAL ================= -->
+  <div id="videoModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="relative max-w-lg w-full bg-slate-900 rounded-3xl p-8 border border-slate-800 text-white shadow-2xl space-y-6">
+      <div class="w-16 h-16 rounded-2xl bg-red-600/20 text-red-500 flex items-center justify-center mx-auto">
+        <svg class="w-8 h-8 fill-current" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+      </div>
+      <div class="text-center space-y-2">
+        <h3 class="text-2xl font-bold">Tanıtım Videosu Çok Yakında!</h3>
+        <p class="text-slate-300 text-sm leading-relaxed">
+          ÖğretmenCep uygulamasının detaylı tanıtım ve kullanım rehberi videosu şu anda stüdyo aşamasındadır. Çok yakında YouTube kanalımızda yayınlanacak ve bu sayfaya eklenecektir.
+        </p>
+      </div>
+      <div class="p-4 rounded-2xl bg-slate-800/80 border border-slate-700/60 text-xs text-slate-400 text-center">
+        💡 Şimdiden uygulamayı deneyimlemek için <a href="https://play.google.com/store/apps/details?id=com.ogretmencep.app" target="_blank" class="text-brand-400 font-semibold underline">Google Play Store</a> üzerinden hemen indirebilirsiniz.
+      </div>
+      <button onclick="closeVideoModal()" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-3 rounded-xl transition-colors">
+        Anladım, Teşekkürler
+      </button>
+    </div>
+  </div>
+
+  <!-- ================= GİZLİLİK POLİTİKASI MODAL ================= -->
+  <div id="privacyModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="relative max-w-2xl w-full bg-white rounded-3xl p-6 sm:p-8 shadow-2xl max-h-[85vh] flex flex-col">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-200">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-brand-100 text-brand-600 flex items-center justify-center font-bold text-sm">
+            🔒
+          </div>
+          <h3 class="text-xl font-bold text-slate-900">ÖğretmenCep Gizlilik Politikası</h3>
+        </div>
+        <button onclick="closePrivacyModal()" class="text-slate-400 hover:text-slate-700 p-1">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      
+      <div class="overflow-y-auto py-4 space-y-4 text-sm text-slate-600 leading-relaxed pr-2">
+        <p class="font-medium text-slate-800">Son Güncelleme: 19 Ekim 2026</p>
+        <p>
+          ÖğretmenCep ("Uygulama"), öğretmenlerimizin ders, yoklama, sınav, ders programı ve öğrenci takibini kolaylaştırmak amacıyla geliştirilmiş <strong>tamamen yerel ve çevrimdışı (offline)</strong> çalışan bir mobil yardımcı asistandır.
+        </p>
+        <h4 class="font-bold text-slate-900 pt-2">1. Toplanan ve İşlenen Veriler</h4>
+        <p>
+          Uygulama; öğrenci ad-soyadları, numaraları, ders notları, devamsızlık kayıtları ve isteğe bağlı fotoğraflar gibi eğitim kayıtlarını depolar.
+        </p>
+        <h4 class="font-bold text-slate-900 pt-2">2. Verilerin Depolanması ve Güvenliği</h4>
+        <p>
+          <strong>Hiçbir Veri Harici Sunuculara Gönderilmez:</strong> ÖğretmenCep uygulamasında girdiğiniz tüm veriler yalnızca sizin cihazınızın dahili hafızasındaki yerel SQLite veritabanında saklanır. Geliştirici dahil hiçbir üçüncü taraf bu verilere erişemez.
+        </p>
+        <h4 class="font-bold text-slate-900 pt-2">3. Kullanılan Cihaz İzinleri</h4>
+        <p>
+          - <strong>Kamera İzni:</strong> Yalnızca öğrenci vesikalık fotoğrafı çekmek istediğinizde kullanılır.<br>
+          - <strong>Depolama İzni:</strong> Excel'den liste aktarmak ve yerel yedek almak için gereklidir.
+        </p>
+        <h4 class="font-bold text-slate-900 pt-2">4. Çocukların Gizliliği</h4>
+        <p>
+          Öğrencilere ait hiçbir veri harici bir ortama iletilmez veya ticari amaçla işlenmez. Tüm verilerin yönetimi uygulamayı kullanan öğretmene aittir.
+        </p>
+      </div>
+
+      <div class="pt-4 border-t border-slate-200 flex justify-end">
+        <button onclick="closePrivacyModal()" class="bg-slate-900 hover:bg-black text-white font-semibold px-6 py-2.5 rounded-xl text-sm transition-colors">
+          Kapat
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= SCRIPTS ================= -->
+  <script>
+    // Mobile Menu Toggle
+    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+    const mobileMenu = document.getElementById('mobileMenu');
+    if (mobileMenuBtn && mobileMenu) {
+      mobileMenuBtn.addEventListener('click', () => {
+        mobileMenu.classList.toggle('hidden');
+      });
+    }
+
+    // Close mobile menu on link click
+    document.querySelectorAll('#mobileMenu a').forEach(link => {
+      link.addEventListener('click', () => {
+        mobileMenu.classList.add('hidden');
+      });
+    });
+
+    // FAQ Accordion Toggle
+    function toggleFaq(button) {
+      const content = button.nextElementSibling;
+      const svg = button.querySelector('svg');
+      const isHidden = content.classList.contains('hidden');
+
+      // Close all others
+      document.querySelectorAll('#faqAccordion > div > div').forEach(c => c.classList.add('hidden'));
+      document.querySelectorAll('#faqAccordion svg').forEach(s => s.classList.remove('rotate-180'));
+
+      if (isHidden) {
+        content.classList.remove('hidden');
+        svg.classList.add('rotate-180');
+      }
+    }
+
+    // Lightbox Modal
+    function openLightbox(src, caption) {
+      document.getElementById('lightboxImg').src = src;
+      document.getElementById('lightboxCaption').textContent = caption;
+      document.getElementById('lightboxModal').classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeLightbox() {
+      document.getElementById('lightboxModal').classList.add('hidden');
+      document.body.style.overflow = '';
+    }
+
+    // Video Modal
+    function showVideoModal() {
+      document.getElementById('videoModal').classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeVideoModal() {
+      document.getElementById('videoModal').classList.add('hidden');
+      document.body.style.overflow = '';
+    }
+
+    // Privacy Modal
+    function openPrivacyModal() {
+      document.getElementById('privacyModal').classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closePrivacyModal() {
+      document.getElementById('privacyModal').classList.add('hidden');
+      document.body.style.overflow = '';
+    }
+
+    // Close modals on Esc key
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeLightbox();
+        closeVideoModal();
+        closePrivacyModal();
+      }
+    });
+
+    // Close modals on click outside
+    [document.getElementById('lightboxModal'), document.getElementById('videoModal'), document.getElementById('privacyModal')].forEach(modal => {
+      if (modal) {
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) {
+            closeLightbox();
+            closeVideoModal();
+            closePrivacyModal();
+          }
+        });
+      }
+    });
+  </script>
+
+</body>
+</html>
