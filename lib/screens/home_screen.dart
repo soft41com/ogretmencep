@@ -134,13 +134,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  String _minutesToTimeString(int totalMinutes) {
-    final clamped = totalMinutes.clamp(0, 24 * 60 - 1);
-    final h = clamped ~/ 60;
-    final m = clamped % 60;
-    return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
-  }
-
   TodayLiveInfo _computeTodayLiveInfo(
     List<TimetableEntryModel> todayEntries,
     List<BellPeriodModel> bellPeriods,
@@ -922,343 +915,68 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildLiveIntervalBar({
     required BuildContext context,
     required LiveIntervalType intervalType,
-    required String startTimeStr,
-    required String endTimeStr,
-    required int totalMinutes,
-    required int elapsedMinutes,
     required int remainingMinutes,
     required double progress,
-    required TimetableEntryModel nextClass,
-    required ClassesProvider classesProv,
     required bool isDark,
   }) {
     Color primaryColor;
-    Color secondaryColor;
     Color bgColor;
     Color borderColor;
-    String titleText;
     IconData headerIcon;
-    String countdownLabel;
 
     switch (intervalType) {
       case LiveIntervalType.beforeFirstLesson:
         primaryColor = isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7);
-        secondaryColor = isDark ? const Color(0xFF0284C7) : const Color(0xFF0369A1);
         bgColor = isDark ? const Color(0xFF0C2438) : const Color(0xFFF0F9FF);
-        borderColor = primaryColor.withOpacity(isDark ? 0.45 : 0.4);
-        titleText = 'DERS ÖNCESİ BEKLEME';
+        borderColor = primaryColor.withOpacity(isDark ? 0.35 : 0.25);
         headerIcon = Icons.alarm_rounded;
-        countdownLabel = 'İlk dersin başlamasına $remainingMinutes dakika kaldı';
         break;
       case LiveIntervalType.recess:
         primaryColor = isDark ? const Color(0xFFFBBF24) : const Color(0xFFD97706);
-        secondaryColor = isDark ? const Color(0xFFD97706) : const Color(0xFFB45309);
         bgColor = isDark ? const Color(0xFF2B2011) : const Color(0xFFFFFBEB);
-        borderColor = primaryColor.withOpacity(isDark ? 0.45 : 0.4);
-        titleText = 'TENEFFÜS ARASI';
+        borderColor = primaryColor.withOpacity(isDark ? 0.35 : 0.25);
         headerIcon = Icons.coffee_rounded;
-        countdownLabel = 'Sıradaki derse $remainingMinutes dakika kaldı';
         break;
       case LiveIntervalType.freePeriod:
         primaryColor = isDark ? const Color(0xFF34D399) : const Color(0xFF059669);
-        secondaryColor = isDark ? const Color(0xFF059669) : const Color(0xFF047857);
         bgColor = isDark ? const Color(0xFF0F261E) : const Color(0xFFECFDF5);
-        borderColor = primaryColor.withOpacity(isDark ? 0.45 : 0.4);
-        titleText = 'BOŞ DERS & DİNLENME';
+        borderColor = primaryColor.withOpacity(isDark ? 0.35 : 0.25);
         headerIcon = Icons.hourglass_top_rounded;
-        countdownLabel = 'Sıradaki derse $remainingMinutes dakika kaldı';
         break;
     }
 
-    final percentInt = (progress * 100).toInt().clamp(0, 100);
-
     return Container(
-      margin: const EdgeInsets.only(top: 4, bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(top: 2, bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: borderColor, width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: primaryColor.withOpacity(isDark ? 0.15 : 0.08),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: borderColor, width: 1),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          // 1. Üst Rozet & Başlık
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: primaryColor.withOpacity(0.18),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(headerIcon, size: 16, color: primaryColor),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    titleText,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 0.5,
-                      color: primaryColor,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    '• $totalMinutes dk',
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w600,
-                      color: isDark ? AppTheme.mutedDark : AppTheme.mutedLight,
-                    ),
-                  ),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: primaryColor.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: primaryColor.withOpacity(0.3), width: 1),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 6,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color: primaryColor,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: primaryColor.withOpacity(0.6),
-                            blurRadius: 4,
-                            spreadRadius: 1,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      'CANLI',
-                      style: TextStyle(
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w900,
-                        color: primaryColor,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ],
+          Icon(headerIcon, size: 14, color: primaryColor),
+          const SizedBox(width: 8),
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(3),
+              child: SizedBox(
+                height: 6,
+                child: LinearProgressIndicator(
+                  value: progress.clamp(0.0, 1.0),
+                  backgroundColor: isDark ? Colors.white12 : Colors.black.withOpacity(0.06),
+                  valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
                 ),
               ),
-            ],
+            ),
           ),
-
-          const SizedBox(height: 12),
-
-          // 2. Geri Sayım & Yüzde
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      countdownLabel,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: -0.3,
-                        color: isDark ? AppTheme.inkDark : AppTheme.inkLight,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '$startTimeStr ───► $endTimeStr',
-                      style: TextStyle(
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w700,
-                        fontFamily: 'monospace',
-                        color: isDark ? AppTheme.mutedDark : AppTheme.mutedLight,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: primaryColor.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  '%$percentInt',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w900,
-                    color: primaryColor,
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 12),
-
-          // 3. Yatay Grafik Bar
-          LayoutBuilder(
-            builder: (context, constraints) {
-              return Column(
-                children: [
-                  Container(
-                    height: 12,
-                    width: constraints.maxWidth,
-                    decoration: BoxDecoration(
-                      color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.06),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Stack(
-                      children: [
-                        FractionallySizedBox(
-                          alignment: Alignment.centerLeft,
-                          widthFactor: progress.clamp(0.0, 1.0),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [primaryColor, secondaryColor],
-                                begin: Alignment.centerLeft,
-                                end: Alignment.centerRight,
-                              ),
-                              borderRadius: BorderRadius.circular(6),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: primaryColor.withOpacity(0.4),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 1),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '$elapsedMinutes dk geçti',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: isDark ? AppTheme.mutedDark : AppTheme.mutedLight,
-                        ),
-                      ),
-                      Text(
-                        '$remainingMinutes dk kaldı',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                          color: primaryColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              );
-            },
-          ),
-
-          const SizedBox(height: 12),
-
-          // 4. Sıradaki Ders Bilgisi
-          InkWell(
-            borderRadius: BorderRadius.circular(12),
-            onTap: () {
-              if (classesProv.classes.isEmpty) return;
-              final matchedClass = classesProv.classes.firstWhere(
-                (c) => c.id == nextClass.classId,
-                orElse: () => classesProv.classes.first,
-              );
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => ClassDetailScreen(classModel: matchedClass),
-                ),
-              );
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: isDark ? Colors.black.withOpacity(0.25) : Colors.white.withOpacity(0.8),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: primaryColor.withOpacity(0.2),
-                  width: 1,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.arrow_forward_rounded,
-                    size: 14,
-                    color: primaryColor,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text.rich(
-                      TextSpan(
-                        text: 'Sıradaki Ders: ',
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w600,
-                          color: isDark ? AppTheme.mutedDark : AppTheme.mutedLight,
-                        ),
-                        children: [
-                          TextSpan(
-                            text: '${nextClass.className ?? ""} • ${nextClass.subject}',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w900,
-                              color: isDark ? AppTheme.inkDark : AppTheme.inkLight,
-                            ),
-                          ),
-                          if (nextClass.startTime != null)
-                            TextSpan(
-                              text: ' (${nextClass.startTime})',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w800,
-                                color: primaryColor,
-                              ),
-                            ),
-                        ],
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  Icon(
-                    Icons.chevron_right_rounded,
-                    size: 16,
-                    color: isDark ? AppTheme.mutedDark : AppTheme.mutedLight,
-                  ),
-                ],
-              ),
+          const SizedBox(width: 10),
+          Text(
+            '$remainingMinutes dk kaldı',
+            style: TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w800,
+              color: primaryColor,
             ),
           ),
         ],
@@ -1545,14 +1263,8 @@ class _HomeScreenState extends State<HomeScreen> {
         _buildLiveIntervalBar(
           context: context,
           intervalType: LiveIntervalType.beforeFirstLesson,
-          startTimeStr: _minutesToTimeString(gapStartM),
-          endTimeStr: sortedEntries.first.startTime ?? _minutesToTimeString(firstStartM),
-          totalMinutes: totalM,
-          elapsedMinutes: elapsedM,
           remainingMinutes: remainingM,
           progress: progress,
-          nextClass: sortedEntries.first,
-          classesProv: classesProv,
           isDark: isDark,
         ),
       );
@@ -1613,14 +1325,8 @@ class _HomeScreenState extends State<HomeScreen> {
               _buildLiveIntervalBar(
                 context: context,
                 intervalType: isRecess ? LiveIntervalType.recess : LiveIntervalType.freePeriod,
-                startTimeStr: entry.endTime ?? _minutesToTimeString(currentEndM),
-                endTimeStr: nextEntry.startTime ?? _minutesToTimeString(nextStartM),
-                totalMinutes: totalGap,
-                elapsedMinutes: elapsedGap,
                 remainingMinutes: remainingGap,
                 progress: progressGap,
-                nextClass: nextEntry,
-                classesProv: classesProv,
                 isDark: isDark,
               ),
             );
