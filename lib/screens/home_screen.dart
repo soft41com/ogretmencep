@@ -47,9 +47,7 @@ class TodayLiveInfo {
     this.minutesSinceLastEnd = 0,
   });
 
-  bool get shouldShowBox =>
-      state != TodayLiveState.noClassesToday &&
-      state != TodayLiveState.allFinishedHidden;
+  bool get shouldShowBox => state == TodayLiveState.inProgress;
 }
 
 enum LiveIntervalType {
@@ -299,185 +297,6 @@ class _HomeScreenState extends State<HomeScreen> {
       state: TodayLiveState.allFinishedHidden,
       currentClass: lastEntry,
       minutesSinceLastEnd: sinceEnd,
-    );
-  }
-
-  // 🏫 Okulda Aktif Ders Devam Ederken Öğretmenin Dersi Yoksa Gösterilecek Sade Bilgilendirme Kutusu
-  Widget _buildSimpleSchoolActiveCard(
-    BuildContext context,
-    TodayLiveInfo liveInfo,
-    bool isDark,
-  ) {
-    final period = liveInfo.activeSchoolPeriod;
-    final nextClass = liveInfo.nextClass;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 18),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? AppTheme.cardDark : AppTheme.cardLight,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: (isDark ? AppTheme.accent : AppTheme.brandLight).withOpacity(0.25),
-          width: 1.2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 1. Üst Rozet Satırı
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: (isDark ? AppTheme.accent : AppTheme.brandLight).withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 7,
-                      height: 7,
-                      decoration: const BoxDecoration(
-                        color: AppTheme.posLight,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Okulda ${period?.label ?? "Ders"} Devam Ediyor',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        color: isDark ? AppTheme.accent : AppTheme.brandLight,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (period != null)
-                Text(
-                  '${period.startTime} - ${period.endTime}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'monospace',
-                    color: isDark ? AppTheme.mutedDark : AppTheme.mutedLight,
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // 2. Ana Başlık & Durum
-          Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: (isDark ? Colors.amber.shade900 : Colors.amber.shade100).withOpacity(0.4),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Center(
-                  child: Text('☕', style: TextStyle(fontSize: 22)),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Bu Saatte Dersiniz Yok (Boş Saat)',
-                      style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Dersin bitimine ${liveInfo.remainingMinutes} dakika kaldı',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: isDark ? AppTheme.mutedDark : AppTheme.mutedLight,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // İlerleme Çubuğu
-          ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: LinearProgressIndicator(
-              value: liveInfo.progress,
-              minHeight: 5,
-              backgroundColor: isDark ? Colors.white10 : Colors.black.withOpacity(0.06),
-              valueColor: AlwaysStoppedAnimation<Color>(
-                isDark ? AppTheme.accent : AppTheme.brandLight,
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // 3. Sıradaki Ders veya Gün Sonu Bilgisi
-          if (nextClass != null)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: (isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.03)),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: isDark ? AppTheme.lineDark : AppTheme.lineLight,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.arrow_forward_rounded,
-                    size: 15,
-                    color: isDark ? AppTheme.accent : AppTheme.brandLight,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Sıradaki Dersiniz: ${nextClass.periodLabel ?? ""} (${nextClass.startTime}) • ${nextClass.className} ${nextClass.subject}',
-                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            )
-          else
-            Row(
-              children: [
-                const Icon(Icons.check_circle_outline_rounded, size: 15, color: AppTheme.posLight),
-                const SizedBox(width: 6),
-                Text(
-                  'Bugün için başka dersiniz bulunmuyor.',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? AppTheme.mutedDark : AppTheme.mutedLight,
-                  ),
-                ),
-              ],
-            ),
-        ],
-      ),
     );
   }
 
@@ -1425,10 +1244,8 @@ class _HomeScreenState extends State<HomeScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            // 🌟 Canlı Ders Bilgilendirme Kutusu
-            if (liveInfo.state == TodayLiveState.schoolActiveTeacherFree)
-              _buildSimpleSchoolActiveCard(context, liveInfo, isDark)
-            else if (liveInfo.shouldShowBox)
+            // 🌟 Canlı Ders Bilgilendirme Kutusu (Yalnızca aktif ders saatindeyken gösterilir)
+            if (liveInfo.state == TodayLiveState.inProgress && _selectedWeekday == todayWeekday)
               _buildLiveHeroCard(context, liveInfo, classesProv, isDark),
 
             // Gün Seçici Hap Butonlar (Pazartesi ... Cuma)
