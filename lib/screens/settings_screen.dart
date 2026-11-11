@@ -49,6 +49,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _lessonNotifyType = 'both';
   bool _isSavingNotifications = false;
   bool _isTestingNotification = false;
+  bool _isTestingScheduledNotification = false;
+  bool _canScheduleExact = true;
 
   String _getCurrentAcademicYear(AppProvider appProv) {
     final year = _yearCtrl.text.trim();
@@ -62,8 +64,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _loadBackups();
+        _checkExactAlarmPermission();
       }
     });
+  }
+
+  Future<void> _checkExactAlarmPermission() async {
+    final canExact = await NotificationService.instance.canScheduleExactNotifications();
+    if (mounted) {
+      setState(() => _canScheduleExact = canExact);
+    }
   }
 
   Future<void> _loadBackups() async {
@@ -1078,6 +1088,69 @@ class _SettingsScreenState extends State<SettingsScreen> {
         const SizedBox(height: 12),
 
         if (_lessonNotifyEnabled) ...[
+          if (!_canScheduleExact) ...[
+            Card(
+              color: isDark ? const Color(0xFF451A03).withOpacity(0.5) : Colors.amber.shade50,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(color: Colors.amber.shade400),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.alarm_on_rounded, color: Colors.amber.shade800, size: 22),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Tam Zamanında Alarm İzni Gerekli',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              color: isDark ? Colors.amber.shade300 : Colors.amber.shade900,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Android sisteminde ders bildirimlerinin zil saatinde tam dakikasında çalabilmesi için "Alarmlar ve Hatırlatıcılar" sistem iznini açmanız önerilir.',
+                      style: TextStyle(
+                        fontSize: 11,
+                        height: 1.35,
+                        color: isDark ? Colors.white70 : Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.amber.shade800,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        onPressed: () async {
+                          await NotificationService.instance.requestExactAlarmsPermission();
+                          final canExact = await NotificationService.instance.canScheduleExactNotifications();
+                          if (mounted) setState(() => _canScheduleExact = canExact);
+                        },
+                        icon: const Icon(Icons.settings_outlined, size: 16),
+                        label: const Text('İzni Etkinleştir (Sistem Ayarlarını Aç)', style: TextStyle(fontSize: 12)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+
           // 1. Ders Başlama Bildirimi Ayarları Kartı
           Card(
             child: Padding(
@@ -1385,103 +1458,182 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 16),
 
-          // Test ve Kaydet Butonları
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          // Test Butonları (Anlık ve 10sn Zamanlı Test)
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.science_outlined, size: 20),
+                      SizedBox(width: 8),
+                      Text('Bildirim Testleri', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    ],
                   ),
-                  onPressed: _isTestingNotification
-                      ? null
-                      : () async {
-                          setState(() => _isTestingNotification = true);
-                          try {
-                            await NotificationService.instance.showTestNotification(
-                              notifyType: _lessonNotifyType,
-                              minutes: _lessonStartNotifyEnabled ? _lessonStartMinutes : _lessonEndMinutes,
-                              isStart: _lessonStartNotifyEnabled,
-                            );
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  backgroundColor: AppTheme.posLight,
-                                  content: Text('Test bildirimi gönderildi! Cihazınızı kontrol edin.'),
-                                ),
-                              );
-                            }
-                          } catch (e) {
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  backgroundColor: AppTheme.negLight,
-                                  content: Text('Bildirim test hatası: $e'),
-                                ),
-                              );
-                            }
-                          } finally {
-                            if (mounted) setState(() => _isTestingNotification = false);
-                          }
-                        },
-                  icon: const Icon(Icons.touch_app_rounded, size: 18),
-                  label: Text(_isTestingNotification ? 'Gönderiliyor...' : 'Bildirimi Test Et'),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.brandLight,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Hem anlık bildirimi hem de arka plan zamanlayıcısını (10 saniye sonra) test edebilirsiniz.',
+                    style: TextStyle(fontSize: 11, color: isDark ? AppTheme.mutedDark : AppTheme.mutedLight),
                   ),
-                  onPressed: _isSavingNotifications
-                      ? null
-                      : () async {
-                          setState(() => _isSavingNotifications = true);
-                          try {
-                            await appProv.updateLessonNotificationSettings(
-                              enabled: _lessonNotifyEnabled,
-                              startEnabled: _lessonStartNotifyEnabled,
-                              startMinutes: _lessonStartMinutes,
-                              endEnabled: _lessonEndNotifyEnabled,
-                              endMinutes: _lessonEndMinutes,
-                              notifyType: _lessonNotifyType,
-                            );
-                            final scheduledCount = await scheduleProv.rescheduleNotifications();
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  backgroundColor: AppTheme.posLight,
-                                  content: Text(
-                                    _lessonNotifyEnabled
-                                        ? 'Bildirim ayarları kaydedildi ve $scheduledCount ders uyarısı planlandı.'
-                                        : 'Ders bildirimleri kapatıldı.',
-                                  ),
-                                ),
-                              );
-                            }
-                          } catch (e) {
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  backgroundColor: AppTheme.negLight,
-                                  content: Text('Kayıt hatası: $e'),
-                                ),
-                              );
-                            }
-                          } finally {
-                            if (mounted) setState(() => _isSavingNotifications = false);
-                          }
-                        },
-                  icon: const Icon(Icons.check_circle_rounded, size: 18),
-                  label: Text(_isSavingNotifications ? 'Kaydediliyor...' : 'Ayarları Kaydet'),
-                ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          onPressed: _isTestingNotification
+                              ? null
+                              : () async {
+                                  setState(() => _isTestingNotification = true);
+                                  try {
+                                    await NotificationService.instance.showTestNotification(
+                                      notifyType: _lessonNotifyType,
+                                      minutes: _lessonStartNotifyEnabled ? _lessonStartMinutes : _lessonEndMinutes,
+                                      isStart: _lessonStartNotifyEnabled,
+                                    );
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          backgroundColor: AppTheme.posLight,
+                                          content: Text('Anlık test bildirimi gönderildi!'),
+                                        ),
+                                      );
+                                    }
+                                  } catch (e) {
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          backgroundColor: AppTheme.negLight,
+                                          content: Text('Test hatası: $e'),
+                                        ),
+                                      );
+                                    }
+                                  } finally {
+                                    if (mounted) setState(() => _isTestingNotification = false);
+                                  }
+                                },
+                          icon: const Icon(Icons.touch_app_rounded, size: 16),
+                          label: Text(_isTestingNotification ? 'Gönderiliyor...' : 'Anlık Test'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          onPressed: _isTestingScheduledNotification
+                              ? null
+                              : () async {
+                                  setState(() => _isTestingScheduledNotification = true);
+                                  try {
+                                    await NotificationService.instance.showScheduledTestNotification(
+                                      notifyType: _lessonNotifyType,
+                                      seconds: 10,
+                                    );
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          backgroundColor: AppTheme.posLight,
+                                          duration: Duration(seconds: 4),
+                                          content: Text('10 saniye sonra zamanlı test uyarısı çalacak. Uygulamayı simge durumuna alıp test edebilirsiniz!'),
+                                        ),
+                                      );
+                                    }
+                                  } catch (e) {
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          backgroundColor: AppTheme.negLight,
+                                          content: Text('Zamanlı test hatası: $e'),
+                                        ),
+                                      );
+                                    }
+                                  } finally {
+                                    if (mounted) setState(() => _isTestingScheduledNotification = false);
+                                  }
+                                },
+                          icon: const Icon(Icons.timer_outlined, size: 16),
+                          label: Text(_isTestingScheduledNotification ? 'Planlandı...' : '10 Sn Sonra Test'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            ],
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          // Ayarları Kaydet Butonu
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.brandLight,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: _isSavingNotifications
+                ? null
+                : () async {
+                    setState(() => _isSavingNotifications = true);
+                    try {
+                      // Android 13+ bildirim iznini garanti et
+                      await NotificationService.instance.requestPermissions();
+
+                      await appProv.updateLessonNotificationSettings(
+                        enabled: _lessonNotifyEnabled,
+                        startEnabled: _lessonStartNotifyEnabled,
+                        startMinutes: _lessonStartMinutes,
+                        endEnabled: _lessonEndNotifyEnabled,
+                        endMinutes: _lessonEndMinutes,
+                        notifyType: _lessonNotifyType,
+                      );
+
+                      final scheduledCount = await scheduleProv.rescheduleNotifications();
+                      await _checkExactAlarmPermission();
+
+                      if (mounted) {
+                        String msg;
+                        if (!_lessonNotifyEnabled) {
+                          msg = 'Ders bildirimleri kapatıldı.';
+                        } else if (scheduledCount > 0) {
+                          msg = 'Bildirim ayarları kaydedildi ve $scheduledCount ders uyarısı başarıyla planlandı.';
+                        } else {
+                          msg = 'Bildirim ayarları kaydedildi. Ders programında kayıtlı ders bulunmadığı için aktif uyarı oluşturulmadı.';
+                        }
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            backgroundColor: AppTheme.posLight,
+                            content: Text(msg),
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            backgroundColor: AppTheme.negLight,
+                            content: Text('Kayıt hatası: $e'),
+                          ),
+                        );
+                      }
+                    } finally {
+                      if (mounted) setState(() => _isSavingNotifications = false);
+                    }
+                  },
+            icon: const Icon(Icons.check_circle_rounded, size: 20),
+            label: Text(
+              _isSavingNotifications ? 'Kaydediliyor...' : 'Bildirim Ayarlarını Kaydet ve Başlat',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
           ),
         ] else ...[
           // Kapalı durumu için kaydet butonu

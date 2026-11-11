@@ -18,8 +18,29 @@ class ScheduleProvider with ChangeNotifier {
       final res = await db.query('settings', limit: 1);
       if (res.isNotEmpty) {
         final settings = SettingsModel.fromMap(res.first);
+
+        // Eğer hafızadaki ders programı boşsa veritabanından güncel veriyi çek
+        List<TimetableEntryModel> entries = _timetable;
+        if (entries.isEmpty) {
+          final raw = await db.rawQuery('''
+            SELECT t.*, 
+              c.name as class_name, 
+              c.color as class_color,
+              bp.label as period_label,
+              bp.start_time,
+              bp.end_time
+            FROM timetable_entries t
+            JOIN classes c ON c.id = t.class_id
+            JOIN bell_periods bp ON bp.id = t.period_id
+            WHERE c.deleted_at IS NULL
+            ORDER BY t.weekday ASC, bp.period_no ASC
+          ''');
+          entries = raw.map((r) => TimetableEntryModel.fromMap(r)).toList();
+          _timetable = entries;
+        }
+
         return await NotificationService.instance.scheduleLessonNotifications(
-          timetable: _timetable,
+          timetable: entries,
           settings: settings,
         );
       }
@@ -49,6 +70,7 @@ class ScheduleProvider with ChangeNotifier {
       }
     });
     await fetchBellPeriods();
+    await fetchTimetable();
   }
 
   static const Map<int, List<String>> _defaultPeriodTimes = {

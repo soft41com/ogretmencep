@@ -26,10 +26,18 @@ class NotificationService {
 
     try {
       tz_data.initializeTimeZones();
+      bool setTz = false;
       try {
-        tz.setLocalLocation(tz.getLocation('Europe/Istanbul'));
-      } catch (_) {
-        // Fallback to local default if timezone name not found
+        final name = DateTime.now().timeZoneName;
+        tz.setLocalLocation(tz.getLocation(name));
+        setTz = true;
+      } catch (_) {}
+
+      if (!setTz) {
+        try {
+          tz.setLocalLocation(tz.getLocation('Europe/Istanbul'));
+          setTz = true;
+        } catch (_) {}
       }
 
       const AndroidInitializationSettings initializationSettingsAndroid =
@@ -132,6 +140,31 @@ class NotificationService {
     return true;
   }
 
+  /// Android 12+ (API 31+) cihazlarda tam zamanlı alarm izninin verilip verilmediğini denetler
+  Future<bool> canScheduleExactNotifications() async {
+    if (!kIsWeb && Platform.isAndroid) {
+      final androidPlugin = _notificationsPlugin
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+      if (androidPlugin != null) {
+        return (await androidPlugin.canScheduleExactNotifications()) ?? false;
+      }
+    }
+    return true;
+  }
+
+  /// Android sistemindeki "Alarmlar ve Hatırlatıcılar" izin ekranını açar
+  Future<bool> requestExactAlarmsPermission() async {
+    if (!kIsWeb && Platform.isAndroid) {
+      final androidPlugin = _notificationsPlugin
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+      if (androidPlugin != null) {
+        final granted = await androidPlugin.requestExactAlarmsPermission();
+        return granted ?? false;
+      }
+    }
+    return true;
+  }
+
   NotificationDetails _getNotificationDetails(String notifyType) {
     String channelId;
     String channelName;
@@ -166,6 +199,10 @@ class NotificationService {
       enableVibration: enableVibration,
       vibrationPattern: enableVibration ? Int64List.fromList([0, 500, 200, 500]) : null,
       icon: '@mipmap/ic_launcher',
+      category: AndroidNotificationCategory.reminder,
+      visibility: NotificationVisibility.public,
+      channelShowBadge: true,
+      autoCancel: true,
     );
 
     final darwinDetails = DarwinNotificationDetails(
@@ -196,6 +233,7 @@ class NotificationService {
     required SettingsModel settings,
   }) async {
     await initialize();
+    await requestPermissions();
 
     // Önce mevcut tüm bildirimleri temizle
     await cancelAllLessonNotifications();
@@ -203,6 +241,11 @@ class NotificationService {
     if (!settings.lessonNotifyEnabled) {
       return 0;
     }
+
+    final bool canExact = await canScheduleExactNotifications();
+    final AndroidScheduleMode preferredMode = canExact
+        ? AndroidScheduleMode.exactAllowWhileIdle
+        : AndroidScheduleMode.inexactAllowWhileIdle;
 
     int scheduledCount = 0;
     final notifyType = settings.lessonNotifyType;
@@ -243,19 +286,37 @@ class NotificationService {
                 ? '$className $subject dersinin başlamasına ${settings.lessonStartMinutes} dakika kaldı.'
                 : '$className $subject dersi şimdi başlıyor!';
 
-            await _notificationsPlugin.zonedSchedule(
-              id: notificationId,
-              title: title,
-              body: body,
-              scheduledDate: scheduledDate,
-              notificationDetails: details,
-              androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-              matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
-            );
-            scheduledCount++;
+            try {
+              await _notificationsPlugin.zonedSchedule(
+                id: notificationId,
+                title: title,
+                body: body,
+                scheduledDate: scheduledDate,
+                notificationDetails: details,
+                androidScheduleMode: preferredMode,
+                matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+              );
+              scheduledCount++;
+            } catch (e) {
+              debugPrint('Exact alarm error ($e), retrying with inexactAllowWhileIdle...');
+              try {
+                await _notificationsPlugin.zonedSchedule(
+                  id: notificationId,
+                  title: title,
+                  body: body,
+                  scheduledDate: scheduledDate,
+                  notificationDetails: details,
+                  androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+                  matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+                );
+                scheduledCount++;
+              } catch (e2) {
+                debugPrint('Ders başlama bildirimi zamanlama hatası: $e2');
+              }
+            }
           }
         } catch (e) {
-          debugPrint('Ders başlama bildirimi zamanlama hatası: $e');
+          debugPrint('Ders başlama hesaplama hatası: $e');
         }
       }
 
@@ -289,19 +350,37 @@ class NotificationService {
                 ? '$className $subject dersinin bitmesine ${settings.lessonEndMinutes} dakika kaldı.'
                 : '$className $subject dersi şimdi bitti!';
 
-            await _notificationsPlugin.zonedSchedule(
-              id: notificationId,
-              title: title,
-              body: body,
-              scheduledDate: scheduledDate,
-              notificationDetails: details,
-              androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-              matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
-            );
-            scheduledCount++;
+            try {
+              await _notificationsPlugin.zonedSchedule(
+                id: notificationId,
+                title: title,
+                body: body,
+                scheduledDate: scheduledDate,
+                notificationDetails: details,
+                androidScheduleMode: preferredMode,
+                matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+              );
+              scheduledCount++;
+            } catch (e) {
+              debugPrint('Exact alarm error ($e), retrying with inexactAllowWhileIdle...');
+              try {
+                await _notificationsPlugin.zonedSchedule(
+                  id: notificationId,
+                  title: title,
+                  body: body,
+                  scheduledDate: scheduledDate,
+                  notificationDetails: details,
+                  androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+                  matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+                );
+                scheduledCount++;
+              } catch (e2) {
+                debugPrint('Ders bitiş bildirimi zamanlama hatası: $e2');
+              }
+            }
           }
         } catch (e) {
-          debugPrint('Ders bitiş bildirimi zamanlama hatası: $e');
+          debugPrint('Ders bitiş hesaplama hatası: $e');
         }
       }
     }
@@ -353,5 +432,45 @@ class NotificationService {
       body: body,
       notificationDetails: details,
     );
+  }
+
+  /// Planlı bildirimi test etmek için belirtilen saniye sonra zamanlı bildirim tetikler
+  Future<void> showScheduledTestNotification({
+    required String notifyType,
+    int seconds = 10,
+    String? className,
+    String? subject,
+  }) async {
+    await initialize();
+    await requestPermissions();
+
+    final details = _getNotificationDetails(notifyType);
+    final cls = className ?? '9-A';
+    final sbj = subject ?? 'Matematik';
+
+    final tz.TZDateTime scheduledDate = tz.TZDateTime.now(tz.local).add(Duration(seconds: seconds));
+    final bool canExact = await canScheduleExactNotifications();
+
+    try {
+      await _notificationsPlugin.zonedSchedule(
+        id: 999998,
+        title: 'Planlı Ders Uyarısı Testi 🔔 ($cls)',
+        body: '$cls $sbj ders uyarısı ($seconds saniye sonra). Zamanlanmış bildirim başarıyla çalışıyor!',
+        scheduledDate: scheduledDate,
+        notificationDetails: details,
+        androidScheduleMode: canExact
+            ? AndroidScheduleMode.exactAllowWhileIdle
+            : AndroidScheduleMode.inexactAllowWhileIdle,
+      );
+    } catch (e) {
+      await _notificationsPlugin.zonedSchedule(
+        id: 999998,
+        title: 'Planlı Ders Uyarısı Testi 🔔 ($cls)',
+        body: '$cls $sbj ders uyarısı ($seconds saniye sonra). Zamanlanmış bildirim başarıyla çalışıyor!',
+        scheduledDate: scheduledDate,
+        notificationDetails: details,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      );
+    }
   }
 }
