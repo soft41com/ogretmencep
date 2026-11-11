@@ -52,6 +52,26 @@ class TodayLiveInfo {
       state != TodayLiveState.allFinishedHidden;
 }
 
+enum LiveIntervalType {
+  beforeFirstLesson,
+  recess,
+  freePeriod,
+}
+
+class InClassProgressData {
+  final int elapsedMinutes;
+  final int remainingMinutes;
+  final int totalMinutes;
+  final double progress;
+
+  InClassProgressData({
+    required this.elapsedMinutes,
+    required this.remainingMinutes,
+    required this.totalMinutes,
+    required this.progress,
+  });
+}
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
 
@@ -100,6 +120,25 @@ class _HomeScreenState extends State<HomeScreen> {
     } else {
       return '$minutes dakika';
     }
+  }
+
+  int? _parseTimeToMinutes(String? timeStr) {
+    if (timeStr == null || !timeStr.contains(':')) return null;
+    try {
+      final parts = timeStr.trim().split(':');
+      final h = int.parse(parts[0]);
+      final m = int.parse(parts[1]);
+      return h * 60 + m;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String _minutesToTimeString(int totalMinutes) {
+    final clamped = totalMinutes.clamp(0, 24 * 60 - 1);
+    final h = clamped ~/ 60;
+    final m = clamped % 60;
+    return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
   }
 
   TodayLiveInfo _computeTodayLiveInfo(
@@ -880,6 +919,727 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildLiveIntervalBar({
+    required BuildContext context,
+    required LiveIntervalType intervalType,
+    required String startTimeStr,
+    required String endTimeStr,
+    required int totalMinutes,
+    required int elapsedMinutes,
+    required int remainingMinutes,
+    required double progress,
+    required TimetableEntryModel nextClass,
+    required ClassesProvider classesProv,
+    required bool isDark,
+  }) {
+    Color primaryColor;
+    Color secondaryColor;
+    Color bgColor;
+    Color borderColor;
+    String titleText;
+    IconData headerIcon;
+    String countdownLabel;
+
+    switch (intervalType) {
+      case LiveIntervalType.beforeFirstLesson:
+        primaryColor = isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7);
+        secondaryColor = isDark ? const Color(0xFF0284C7) : const Color(0xFF0369A1);
+        bgColor = isDark ? const Color(0xFF0C2438) : const Color(0xFFF0F9FF);
+        borderColor = primaryColor.withOpacity(isDark ? 0.45 : 0.4);
+        titleText = 'DERS ÖNCESİ BEKLEME';
+        headerIcon = Icons.alarm_rounded;
+        countdownLabel = 'İlk dersin başlamasına $remainingMinutes dakika kaldı';
+        break;
+      case LiveIntervalType.recess:
+        primaryColor = isDark ? const Color(0xFFFBBF24) : const Color(0xFFD97706);
+        secondaryColor = isDark ? const Color(0xFFD97706) : const Color(0xFFB45309);
+        bgColor = isDark ? const Color(0xFF2B2011) : const Color(0xFFFFFBEB);
+        borderColor = primaryColor.withOpacity(isDark ? 0.45 : 0.4);
+        titleText = 'TENEFFÜS ARASI';
+        headerIcon = Icons.coffee_rounded;
+        countdownLabel = 'Sıradaki derse $remainingMinutes dakika kaldı';
+        break;
+      case LiveIntervalType.freePeriod:
+        primaryColor = isDark ? const Color(0xFF34D399) : const Color(0xFF059669);
+        secondaryColor = isDark ? const Color(0xFF059669) : const Color(0xFF047857);
+        bgColor = isDark ? const Color(0xFF0F261E) : const Color(0xFFECFDF5);
+        borderColor = primaryColor.withOpacity(isDark ? 0.45 : 0.4);
+        titleText = 'BOŞ DERS & DİNLENME';
+        headerIcon = Icons.hourglass_top_rounded;
+        countdownLabel = 'Sıradaki derse $remainingMinutes dakika kaldı';
+        break;
+    }
+
+    final percentInt = (progress * 100).toInt().clamp(0, 100);
+
+    return Container(
+      margin: const EdgeInsets.only(top: 4, bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: borderColor, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: primaryColor.withOpacity(isDark ? 0.15 : 0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 1. Üst Rozet & Başlık
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: primaryColor.withOpacity(0.18),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(headerIcon, size: 16, color: primaryColor),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    titleText,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.5,
+                      color: primaryColor,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    '• $totalMinutes dk',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? AppTheme.mutedDark : AppTheme.mutedLight,
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: primaryColor.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: primaryColor.withOpacity(0.3), width: 1),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: primaryColor,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: primaryColor.withOpacity(0.6),
+                            blurRadius: 4,
+                            spreadRadius: 1,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      'CANLI',
+                      style: TextStyle(
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w900,
+                        color: primaryColor,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          // 2. Geri Sayım & Yüzde
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      countdownLabel,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.3,
+                        color: isDark ? AppTheme.inkDark : AppTheme.inkLight,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '$startTimeStr ───► $endTimeStr',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                        fontFamily: 'monospace',
+                        color: isDark ? AppTheme.mutedDark : AppTheme.mutedLight,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: primaryColor.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '%$percentInt',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
+                    color: primaryColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          // 3. Yatay Grafik Bar
+          LayoutBuilder(
+            builder: (context, constraints) {
+              return Column(
+                children: [
+                  Container(
+                    height: 12,
+                    width: constraints.maxWidth,
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.06),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Stack(
+                      children: [
+                        FractionallySizedBox(
+                          alignment: Alignment.centerLeft,
+                          widthFactor: progress.clamp(0.0, 1.0),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [primaryColor, secondaryColor],
+                                begin: Alignment.centerLeft,
+                                end: Alignment.centerRight,
+                              ),
+                              borderRadius: BorderRadius.circular(6),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: primaryColor.withOpacity(0.4),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '$elapsedMinutes dk geçti',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? AppTheme.mutedDark : AppTheme.mutedLight,
+                        ),
+                      ),
+                      Text(
+                        '$remainingMinutes dk kaldı',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          color: primaryColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            },
+          ),
+
+          const SizedBox(height: 12),
+
+          // 4. Sıradaki Ders Bilgisi
+          InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () {
+              if (classesProv.classes.isEmpty) return;
+              final matchedClass = classesProv.classes.firstWhere(
+                (c) => c.id == nextClass.classId,
+                orElse: () => classesProv.classes.first,
+              );
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ClassDetailScreen(classModel: matchedClass),
+                ),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: isDark ? Colors.black.withOpacity(0.25) : Colors.white.withOpacity(0.8),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: primaryColor.withOpacity(0.2),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.arrow_forward_rounded,
+                    size: 14,
+                    color: primaryColor,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text.rich(
+                      TextSpan(
+                        text: 'Sıradaki Ders: ',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? AppTheme.mutedDark : AppTheme.mutedLight,
+                        ),
+                        children: [
+                          TextSpan(
+                            text: '${nextClass.className ?? ""} • ${nextClass.subject}',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w900,
+                              color: isDark ? AppTheme.inkDark : AppTheme.inkLight,
+                            ),
+                          ),
+                          if (nextClass.startTime != null)
+                            TextSpan(
+                              text: ' (${nextClass.startTime})',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w800,
+                                color: primaryColor,
+                              ),
+                            ),
+                        ],
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    size: 16,
+                    color: isDark ? AppTheme.mutedDark : AppTheme.mutedLight,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLessonCard({
+    required BuildContext context,
+    required TimetableEntryModel entry,
+    required ClassesProvider classesProv,
+    required bool isCurrentActive,
+    required InClassProgressData? inClassProgress,
+    required bool isDark,
+  }) {
+    final classColor = entry.classColor != null ? _parseHex(entry.classColor!) : AppTheme.brandLight;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      elevation: isCurrentActive ? 3 : 0.5,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: BorderSide(
+          color: isCurrentActive
+              ? AppTheme.posLight
+              : (isDark ? AppTheme.lineDark : AppTheme.lineLight),
+          width: isCurrentActive ? 2 : 1,
+        ),
+      ),
+      color: isCurrentActive
+          ? (isDark
+              ? AppTheme.posLight.withOpacity(0.14)
+              : const Color(0xFFE8F5E9))
+          : null,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: () {
+          if (classesProv.classes.isEmpty) return;
+          final matchedClass = classesProv.classes.firstWhere(
+            (c) => c.id == entry.classId,
+            orElse: () => classesProv.classes.first,
+          );
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ClassDetailScreen(classModel: matchedClass),
+            ),
+          );
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: isCurrentActive
+                          ? AppTheme.posLight
+                          : classColor.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: isCurrentActive
+                          ? [
+                              BoxShadow(
+                                color: AppTheme.posLight.withOpacity(0.4),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              )
+                            ]
+                          : null,
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      entry.periodLabel?.split(".").first ?? "D",
+                      style: TextStyle(
+                        color: isCurrentActive ? Colors.white : classColor,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                '${entry.className} • ${entry.subject}',
+                                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (isCurrentActive) ...[
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.posLight,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.sensors_rounded, size: 12, color: Colors.white),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      'ŞU AN DERSTESİNİZ',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 9.5,
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: 0.3,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          '${entry.periodLabel ?? ""} (${entry.startTime ?? ""} - ${entry.endTime ?? ""})',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: isCurrentActive ? FontWeight.bold : FontWeight.normal,
+                            color: isCurrentActive
+                                ? (isDark ? AppTheme.posLight : const Color(0xFF1B5E20))
+                                : (isDark ? AppTheme.mutedDark : AppTheme.mutedLight),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    Icons.chevron_right,
+                    size: 20,
+                    color: isCurrentActive ? AppTheme.posLight : null,
+                  ),
+                ],
+              ),
+              if (isCurrentActive && inClassProgress != null) ...[
+                const SizedBox(height: 10),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: inClassProgress.progress,
+                    minHeight: 6,
+                    backgroundColor: isDark ? Colors.white12 : Colors.black.withOpacity(0.08),
+                    valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.posLight),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '${inClassProgress.elapsedMinutes} dk geçti (%${(inClassProgress.progress * 100).toInt()})',
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? AppTheme.mutedDark : AppTheme.mutedLight,
+                      ),
+                    ),
+                    Text(
+                      'Dersin bitimine ${inClassProgress.remainingMinutes} dk kaldı',
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w800,
+                        color: isDark ? AppTheme.posLight : const Color(0xFF1B5E20),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDayFinishedNotice(BuildContext context, bool isDark) {
+    return Container(
+      margin: const EdgeInsets.only(top: 8, bottom: 8),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.03),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? AppTheme.lineDark : AppTheme.lineLight,
+        ),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.task_alt_rounded, size: 20, color: AppTheme.posLight),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Günün tüm dersleri tamamlandı. İyi dinlenmeler! 🎉',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: isDark ? AppTheme.inkDark : AppTheme.inkLight,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _buildScheduleListWithLiveBars({
+    required BuildContext context,
+    required List<TimetableEntryModel> dayEntries,
+    required List<BellPeriodModel> bellPeriods,
+    required ClassesProvider classesProv,
+    required bool isDark,
+  }) {
+    // Dersleri başlangıç saatine göre sırala
+    final sortedEntries = List<TimetableEntryModel>.from(dayEntries);
+    sortedEntries.sort((a, b) {
+      final aM = _parseTimeToMinutes(a.startTime) ?? 0;
+      final bM = _parseTimeToMinutes(b.startTime) ?? 0;
+      return aM.compareTo(bM);
+    });
+
+    final now = DateTime.now();
+    final isToday = _selectedWeekday == now.weekday;
+    final currentMinutes = now.hour * 60 + now.minute;
+
+    if (!isToday || sortedEntries.isEmpty) {
+      return sortedEntries
+          .map((entry) => _buildLessonCard(
+                context: context,
+                entry: entry,
+                classesProv: classesProv,
+                isCurrentActive: false,
+                inClassProgress: null,
+                isDark: isDark,
+              ))
+          .toList();
+    }
+
+    // Okulun ilk zil başlangıç saatini bul (örn. 09:00)
+    int? schoolStartM;
+    for (final bp in bellPeriods) {
+      final m = _parseTimeToMinutes(bp.startTime);
+      if (m != null) {
+        if (schoolStartM == null || m < schoolStartM) {
+          schoolStartM = m;
+        }
+      }
+    }
+
+    final List<Widget> widgets = [];
+    final firstStartM = _parseTimeToMinutes(sortedEntries.first.startTime);
+
+    // 1. DURUM: Günün ilk dersinden önce miyiz?
+    // Örnek: Okul başlangıcı 09:00, ilk ders 10:15, aktif saat 09:30 -> 75 dk'lık bar, 45 dk kaldı.
+    if (firstStartM != null && currentMinutes < firstStartM) {
+      int gapStartM;
+      if (schoolStartM != null && schoolStartM < firstStartM) {
+        gapStartM = currentMinutes < schoolStartM ? currentMinutes : schoolStartM;
+      } else {
+        final windowStart = firstStartM - 60;
+        gapStartM = (windowStart > 0 && currentMinutes >= windowStart)
+            ? windowStart
+            : currentMinutes;
+      }
+
+      final totalM = (firstStartM - gapStartM).clamp(1, 24 * 60);
+      final elapsedM = (currentMinutes - gapStartM).clamp(0, totalM);
+      final remainingM = (firstStartM - currentMinutes).clamp(0, totalM);
+      final progress = (elapsedM / totalM).clamp(0.0, 1.0);
+
+      widgets.add(
+        _buildLiveIntervalBar(
+          context: context,
+          intervalType: LiveIntervalType.beforeFirstLesson,
+          startTimeStr: _minutesToTimeString(gapStartM),
+          endTimeStr: sortedEntries.first.startTime ?? _minutesToTimeString(firstStartM),
+          totalMinutes: totalM,
+          elapsedMinutes: elapsedM,
+          remainingMinutes: remainingM,
+          progress: progress,
+          nextClass: sortedEntries.first,
+          classesProv: classesProv,
+          isDark: isDark,
+        ),
+      );
+    }
+
+    // 2. DERS KARTLARI VE ARALAR (Teneffüs / Boş Ders)
+    for (int i = 0; i < sortedEntries.length; i++) {
+      final entry = sortedEntries[i];
+      final startM = _parseTimeToMinutes(entry.startTime);
+      final endM = _parseTimeToMinutes(entry.endTime);
+
+      bool isCurrentActive = false;
+      InClassProgressData? inClassProgress;
+
+      if (startM != null && endM != null && currentMinutes >= startM && currentMinutes < endM) {
+        isCurrentActive = true;
+        final classTotal = (endM - startM).clamp(1, 180);
+        final classElapsed = (currentMinutes - startM).clamp(0, classTotal);
+        final classRemaining = (endM - currentMinutes).clamp(0, classTotal);
+        final classProg = (classElapsed / classTotal).clamp(0.0, 1.0);
+
+        inClassProgress = InClassProgressData(
+          elapsedMinutes: classElapsed,
+          remainingMinutes: classRemaining,
+          totalMinutes: classTotal,
+          progress: classProg,
+        );
+      }
+
+      // Ders Kartını Ekle
+      widgets.add(
+        _buildLessonCard(
+          context: context,
+          entry: entry,
+          classesProv: classesProv,
+          isCurrentActive: isCurrentActive,
+          inClassProgress: inClassProgress,
+          isDark: isDark,
+        ),
+      );
+
+      // İki ders arası kontrolü (Teneffüs veya Boş Ders)
+      if (i < sortedEntries.length - 1) {
+        final nextEntry = sortedEntries[i + 1];
+        final currentEndM = endM;
+        final nextStartM = _parseTimeToMinutes(nextEntry.startTime);
+
+        if (currentEndM != null && nextStartM != null && nextStartM > currentEndM) {
+          // Eğer şu anki saat bu iki dersin arasındaysa
+          if (currentMinutes >= currentEndM && currentMinutes < nextStartM) {
+            final totalGap = nextStartM - currentEndM;
+            final elapsedGap = (currentMinutes - currentEndM).clamp(0, totalGap);
+            final remainingGap = (nextStartM - currentMinutes).clamp(0, totalGap);
+            final progressGap = totalGap > 0 ? (elapsedGap / totalGap).clamp(0.0, 1.0) : 0.0;
+            final isRecess = totalGap <= 25;
+
+            widgets.add(
+              _buildLiveIntervalBar(
+                context: context,
+                intervalType: isRecess ? LiveIntervalType.recess : LiveIntervalType.freePeriod,
+                startTimeStr: entry.endTime ?? _minutesToTimeString(currentEndM),
+                endTimeStr: nextEntry.startTime ?? _minutesToTimeString(nextStartM),
+                totalMinutes: totalGap,
+                elapsedMinutes: elapsedGap,
+                remainingMinutes: remainingGap,
+                progress: progressGap,
+                nextClass: nextEntry,
+                classesProv: classesProv,
+                isDark: isDark,
+              ),
+            );
+          }
+        }
+      }
+    }
+
+    // 3. GÜN BİTİMİ KONTROLÜ
+    final lastEndM = _parseTimeToMinutes(sortedEntries.last.endTime);
+    if (lastEndM != null && currentMinutes >= lastEndM) {
+      widgets.add(
+        _buildDayFinishedNotice(context, isDark),
+      );
+    }
+
+    return widgets;
+  }
+
   @override
   Widget build(BuildContext context) {
     final appProv = context.watch<AppProvider>();
@@ -1049,143 +1809,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               )
             else
-              ...dayEntries.map((entry) {
-                final classColor = entry.classColor != null ? _parseHex(entry.classColor!) : AppTheme.brandLight;
-                final now = DateTime.now();
-                final isToday = _selectedWeekday == todayWeekday;
-                bool isCurrentActive = false;
-
-                if (isToday && entry.startTime != null && entry.endTime != null) {
-                  try {
-                    final currentMinutes = now.hour * 60 + now.minute;
-                    final startParts = entry.startTime!.split(':').map(int.parse).toList();
-                    final endParts = entry.endTime!.split(':').map(int.parse).toList();
-                    final startM = startParts[0] * 60 + startParts[1];
-                    final endM = endParts[0] * 60 + endParts[1];
-                    if (currentMinutes >= startM && currentMinutes < endM) {
-                      isCurrentActive = true;
-                    }
-                  } catch (_) {}
-                }
-
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  elevation: isCurrentActive ? 3 : 0.5,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18),
-                    side: BorderSide(
-                      color: isCurrentActive
-                          ? AppTheme.posLight
-                          : (isDark ? AppTheme.lineDark : AppTheme.lineLight),
-                      width: isCurrentActive ? 2 : 1,
-                    ),
-                  ),
-                  color: isCurrentActive
-                      ? (isDark
-                          ? AppTheme.posLight.withOpacity(0.14)
-                          : const Color(0xFFE8F5E9))
-                      : null,
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                    leading: Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: isCurrentActive
-                            ? AppTheme.posLight
-                            : classColor.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(14),
-                        boxShadow: isCurrentActive
-                            ? [
-                                BoxShadow(
-                                  color: AppTheme.posLight.withOpacity(0.4),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                )
-                              ]
-                            : null,
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        entry.periodLabel?.split(".").first ?? "D",
-                        style: TextStyle(
-                          color: isCurrentActive ? Colors.white : classColor,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 15,
-                        ),
-                      ),
-                    ),
-                    title: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            '${entry.className} • ${entry.subject}',
-                            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        if (isCurrentActive) ...[
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: AppTheme.posLight,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.sensors_rounded, size: 12, color: Colors.white),
-                                SizedBox(width: 4),
-                                Text(
-                                  'ŞU AN DERSTESİNİZ',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 9.5,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 0.3,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                    subtitle: Padding(
-                      padding: const EdgeInsets.only(top: 2),
-                      child: Text(
-                        '${entry.periodLabel ?? ""} (${entry.startTime ?? ""} - ${entry.endTime ?? ""})',
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          fontWeight: isCurrentActive ? FontWeight.bold : FontWeight.normal,
-                          color: isCurrentActive
-                              ? (isDark ? AppTheme.posLight : const Color(0xFF1B5E20))
-                              : (isDark ? AppTheme.mutedDark : AppTheme.mutedLight),
-                        ),
-                      ),
-                    ),
-                    trailing: Icon(
-                      Icons.chevron_right,
-                      size: 20,
-                      color: isCurrentActive ? AppTheme.posLight : null,
-                    ),
-                    onTap: () {
-                      final matchedClass = classesProv.classes.firstWhere(
-                        (c) => c.id == entry.classId,
-                        orElse: () => classesProv.classes.first,
-                      );
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => ClassDetailScreen(classModel: matchedClass),
-                        ),
-                      );
-                    },
-                  ),
-                );
-              }),
+              ..._buildScheduleListWithLiveBars(
+                context: context,
+                dayEntries: dayEntries,
+                bellPeriods: scheduleProv.bellPeriods,
+                classesProv: classesProv,
+                isDark: isDark,
+              ),
           ],
         ),
       ),
