@@ -263,14 +263,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       helpText: 'Saat ve Dakika Seçin',
       cancelText: 'İptal',
       confirmText: 'Tamam',
-      builder: (context, child) {
-        return Localizations.override(
-          context: context,
-          locale: const Locale('tr', 'TR'),
-          child: MediaQuery(
-            data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
-            child: child!,
-          ),
+      builder: (dialogContext, child) {
+        return MediaQuery(
+          data: MediaQuery.of(dialogContext).copyWith(alwaysUse24HourFormat: true),
+          child: child ?? const SizedBox.shrink(),
         );
       },
     );
@@ -454,8 +450,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         label: periods[i].label,
                       );
                     }
+                    Navigator.pop(ctx);
                     await scheduleProv.updateBellPeriods(periods);
-                    if (mounted) Navigator.pop(ctx);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Zil saatleri başarıyla güncellendi.'),
+                          backgroundColor: AppTheme.posLight,
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    }
                   },
                   child: const Text('Zil Saatlerini Kaydet'),
                 ),
