@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../models/models.dart';
 import '../providers/app_provider.dart';
 import '../providers/classes_provider.dart';
+import '../providers/notes_provider.dart';
 import '../providers/schedule_provider.dart';
 import '../theme/app_theme.dart';
 import 'attendance_screen.dart';
@@ -1170,6 +1171,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final appProv = context.watch<AppProvider>();
     final scheduleProv = context.watch<ScheduleProvider>();
     final classesProv = context.watch<ClassesProvider>();
+    final notesProv = context.watch<NotesProvider>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final teacherName = appProv.settings?.teacherName ?? 'Öğretmenim';
@@ -1186,6 +1188,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // Aşağıdaki gün listesinde seçili olan günün dersleri
     final dayEntries = scheduleProv.getDayEntries(_selectedWeekday);
+
+    // Seçili güne ait tarih ve notlar
+    final selectedDate = _getDateForWeekday(_selectedWeekday);
+    final dayNotes = notesProv.getNotesForDay(_selectedWeekday, selectedDate);
 
     return Scaffold(
       appBar: AppBar(
@@ -1240,6 +1246,7 @@ class _HomeScreenState extends State<HomeScreen> {
         onRefresh: () async {
           await scheduleProv.fetchTimetable();
           await classesProv.fetchClasses();
+          await notesProv.fetchNotes();
         },
         child: ListView(
           padding: const EdgeInsets.all(16),
@@ -1248,7 +1255,7 @@ class _HomeScreenState extends State<HomeScreen> {
             if (liveInfo.state == TodayLiveState.inProgress && _selectedWeekday == todayWeekday)
               _buildLiveHeroCard(context, liveInfo, classesProv, isDark),
 
-            // Gün Seçici Hap Butonlar (Pazartesi ... Cuma)
+            // 📅 Ders Programı Başlığı ve Gün Seçici Hap Butonlar (Pazartesi ... Cuma)
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -1297,51 +1304,911 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 14),
 
-            // Seçili Günün Dersleri
-            if (dayEntries.isEmpty)
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(28),
+            // 1. KUTU: Ders Programı Kutusu
+            Container(
+              decoration: BoxDecoration(
+                color: isDark ? AppTheme.cardDark : AppTheme.cardLight,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: isDark ? AppTheme.lineDark : AppTheme.lineLight,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(isDark ? 0.18 : 0.03),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (dayEntries.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
+                      child: Column(
+                        children: [
+                          const Text('☕', style: TextStyle(fontSize: 32)),
+                          const SizedBox(height: 8),
+                          Text(
+                            '${_days[_selectedWeekday - 1]} günü için ders programı boş.',
+                            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Hızlı matris ile saniyeler içinde ders ekleyebilirsiniz.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 11, color: isDark ? AppTheme.mutedDark : AppTheme.mutedLight),
+                          ),
+                          const SizedBox(height: 12),
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.brandLight,
+                              foregroundColor: Colors.white,
+                              visualDensity: VisualDensity.compact,
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            ),
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => const TimetableMatrixScreen()),
+                              );
+                            },
+                            icon: const Icon(Icons.add, size: 16),
+                            label: const Text('Matristen Ders Ata'),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    ..._buildScheduleListWithLiveBars(
+                      context: context,
+                      dayEntries: dayEntries,
+                      bellPeriods: scheduleProv.bellPeriods,
+                      classesProv: classesProv,
+                      isDark: isDark,
+                    ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // 2. KUTU: Notlar Kutusu
+            _buildNotesContainer(
+              context: context,
+              dayNotes: dayNotes,
+              isDark: isDark,
+              selectedDate: selectedDate,
+            ),
+
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Seçili haftanın gününün mevcut takvimdeki DateTime karşılığını döner
+  DateTime _getDateForWeekday(int targetWeekday) {
+    final now = DateTime.now();
+    final currentWeekday = now.weekday; // 1 = Pazartesi, 7 = Pazar
+    final diff = targetWeekday - currentWeekday;
+    return DateTime(now.year, now.month, now.day).add(Duration(days: diff));
+  }
+
+  /// 2. Container: Notlar Kutusu
+  Widget _buildNotesContainer({
+    required BuildContext context,
+    required List<DailyNoteModel> dayNotes,
+    required bool isDark,
+    required DateTime selectedDate,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppTheme.cardDark : AppTheme.cardLight,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: isDark ? AppTheme.lineDark : AppTheme.lineLight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.18 : 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Notlar Başlığı ve Not Ekle Butonu Hizalı
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: AppTheme.accent.withOpacity(0.18),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.sticky_note_2_rounded, size: 18, color: AppTheme.accent),
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Notlar',
+                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+                  ),
+                  if (dayNotes.isNotEmpty) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: (isDark ? AppTheme.accent : AppTheme.brandLight).withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '${dayNotes.length}',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                          color: isDark ? AppTheme.accent : AppTheme.brandLight,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.accent,
+                  foregroundColor: AppTheme.brandDark,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                onPressed: () => _showAddEditNoteSheet(context, defaultDate: selectedDate),
+                icon: const Icon(Icons.add_rounded, size: 16),
+                label: const Text('Not Ekle', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Günün Notları Listesi
+          if (dayNotes.isEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 14),
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white.withOpacity(0.02) : const Color(0xFFF9FAF9),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isDark ? AppTheme.lineDark.withOpacity(0.5) : AppTheme.lineLight,
+                ),
+              ),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.event_note_outlined,
+                    size: 28,
+                    color: (isDark ? AppTheme.mutedDark : AppTheme.mutedLight).withOpacity(0.6),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '${_days[_selectedWeekday - 1]} günü için henüz not bulunmuyor.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? AppTheme.mutedDark : AppTheme.mutedLight,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            )
+          else
+            Column(
+              children: dayNotes.map((note) => _buildNoteItem(context, note, isDark)).toList(),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// Not Öğesi Kartı (2 satırlık gösterim)
+  Widget _buildNoteItem(BuildContext context, DailyNoteModel note, bool isDark) {
+    final isRecurring = note.isRecurring;
+    String badgeText;
+    final IconData badgeIcon;
+    if (isRecurring) {
+      final dayName = (note.weekday != null && note.weekday! >= 1 && note.weekday! <= 7)
+          ? _days[note.weekday! - 1]
+          : _days[_selectedWeekday - 1];
+      badgeText = 'Her $dayName (Haftalık)';
+      badgeIcon = Icons.repeat_rounded;
+    } else {
+      if (note.date != null && note.date!.isNotEmpty) {
+        try {
+          final parsed = DateTime.parse(note.date!);
+          badgeText = DateFormat('d MMMM yyyy, EEEE', 'tr_TR').format(parsed);
+        } catch (_) {
+          badgeText = note.date!;
+        }
+      } else {
+        badgeText = 'Tarihli Not';
+      }
+      badgeIcon = Icons.calendar_today_rounded;
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF242E2B) : const Color(0xFFF8FAF9),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isDark ? AppTheme.lineDark : AppTheme.lineLight,
+          width: 1,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () => _showNoteDetailSheet(context, note),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Rozet (Tarih ya da Haftalık Tekrar)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: isRecurring
+                            ? (isDark ? const Color(0xFF1B3B36) : const Color(0xFFE0F2F1))
+                            : (isDark ? const Color(0xFF2E3345) : const Color(0xFFEDE7F6)),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            badgeIcon,
+                            size: 11,
+                            color: isRecurring
+                                ? (isDark ? AppTheme.accent : const Color(0xFF00796B))
+                                : (isDark ? const Color(0xFFB39DDB) : const Color(0xFF5E35B1)),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            badgeText,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: isRecurring
+                                  ? (isDark ? AppTheme.accent : const Color(0xFF00796B))
+                                  : (isDark ? const Color(0xFFB39DDB) : const Color(0xFF5E35B1)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      size: 18,
+                      color: (isDark ? AppTheme.mutedDark : AppTheme.mutedLight).withOpacity(0.6),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 7),
+
+                // Başlık varsa
+                if (note.title != null && note.title!.trim().isNotEmpty) ...[
+                  Text(
+                    note.title!.trim(),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 3),
+                ],
+
+                // Not Açıklaması: Kullanıcı isteği -> 2 satırlık gösterim
+                Text(
+                  note.content,
+                  style: TextStyle(
+                    fontSize: 12,
+                    height: 1.35,
+                    color: isDark ? AppTheme.inkDark.withOpacity(0.85) : AppTheme.inkLight.withOpacity(0.85),
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Not Detay Penceresi (Alt panel, silme ve düzenleme butonları ile)
+  void _showNoteDetailSheet(BuildContext context, DailyNoteModel note) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isRecurring = note.isRecurring;
+    String timingText;
+    if (isRecurring) {
+      final dayName = (note.weekday != null && note.weekday! >= 1 && note.weekday! <= 7)
+          ? _days[note.weekday! - 1]
+          : _days[_selectedWeekday - 1];
+      timingText = 'Her $dayName (Haftalık Tekrarlanan)';
+    } else {
+      if (note.date != null && note.date!.isNotEmpty) {
+        try {
+          final parsed = DateTime.parse(note.date!);
+          timingText = DateFormat('d MMMM yyyy, EEEE', 'tr_TR').format(parsed);
+        } catch (_) {
+          timingText = note.date!;
+        }
+      } else {
+        timingText = 'Tarih Belirtilmedi';
+      }
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: isDark ? AppTheme.cardDark : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetCtx) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Handle bar
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: (isDark ? Colors.white : Colors.black).withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              // Header Row
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppTheme.accent.withOpacity(0.18),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.sticky_note_2_rounded, size: 22, color: AppTheme.accent),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Not Detayı',
+                          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+                        ),
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            Icon(
+                              isRecurring ? Icons.repeat_rounded : Icons.calendar_today_rounded,
+                              size: 12,
+                              color: isDark ? AppTheme.mutedDark : AppTheme.mutedLight,
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                timingText,
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark ? AppTheme.mutedDark : AppTheme.mutedLight,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(sheetCtx),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              const Divider(height: 1),
+              const SizedBox(height: 16),
+
+              // Content Area
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(sheetCtx).size.height * 0.45,
+                ),
+                child: SingleChildScrollView(
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('☕', style: TextStyle(fontSize: 36)),
-                      const SizedBox(height: 12),
-                      Text(
-                        '${_days[_selectedWeekday - 1]} günü için ders programı boş.',
-                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Hızlı matris ile saniyeler içinde ders ekleyebilirsiniz.',
-                        style: TextStyle(fontSize: 11, color: isDark ? AppTheme.mutedDark : AppTheme.mutedLight),
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(40)),
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const TimetableMatrixScreen()),
-                          );
-                        },
-                        icon: const Icon(Icons.add, size: 16),
-                        label: const Text('Matristen Ders Ata'),
+                      if (note.title != null && note.title!.trim().isNotEmpty) ...[
+                        Text(
+                          note.title!.trim(),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                      ],
+                      SelectableText(
+                        note.content,
+                        style: TextStyle(
+                          fontSize: 14,
+                          height: 1.5,
+                          color: isDark ? AppTheme.inkDark : AppTheme.inkLight,
+                        ),
                       ),
                     ],
                   ),
                 ),
-              )
-            else
-              ..._buildScheduleListWithLiveBars(
-                context: context,
-                dayEntries: dayEntries,
-                bellPeriods: scheduleProv.bellPeriods,
-                classesProv: classesProv,
-                isDark: isDark,
               ),
+              const SizedBox(height: 24),
+
+              // Aksiyon Butonları (Sil ve Düzenle)
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.red,
+                        side: const BorderSide(color: Colors.red, width: 1.2),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: () {
+                        Navigator.pop(sheetCtx);
+                        _confirmDeleteNote(context, note);
+                      },
+                      icon: const Icon(Icons.delete_outline_rounded, size: 18),
+                      label: const Text('Sil', style: TextStyle(fontWeight: FontWeight.w800)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.brandLight,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: () {
+                        Navigator.pop(sheetCtx);
+                        _showAddEditNoteSheet(context, existingNote: note);
+                      },
+                      icon: const Icon(Icons.edit_rounded, size: 18),
+                      label: const Text('Düzenle', style: TextStyle(fontWeight: FontWeight.w800)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// Not Silme Onay Penceresi
+  Future<void> _confirmDeleteNote(BuildContext context, DailyNoteModel note) async {
+    if (note.id == null) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.delete_outline_rounded, color: Colors.red),
+            SizedBox(width: 8),
+            Text('Notu Sil', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           ],
         ),
+        content: const Text('Bu notu silmek istediğinize emin misiniz? Bu işlem geri alınamaz.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx, false),
+            child: const Text('Vazgeç'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(dialogCtx, true),
+            child: const Text('Sil'),
+          ),
+        ],
       ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      final success = await context.read<NotesProvider>().deleteNote(note.id!);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(success ? 'Not başarıyla silindi.' : 'Not silinirken hata oluştu.'),
+            backgroundColor: success ? AppTheme.posLight : Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Yeni Not Ekleme veya Düzenleme Alt Paneli
+  void _showAddEditNoteSheet(
+    BuildContext context, {
+    DailyNoteModel? existingNote,
+    DateTime? defaultDate,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isEditing = existingNote != null;
+
+    // Başlangıç değerleri
+    bool isRecurring = existingNote?.isRecurring ?? false;
+    int selectedWeekday = existingNote?.weekday ?? _selectedWeekday;
+
+    DateTime selectedDate;
+    if (existingNote?.date != null && existingNote!.date!.isNotEmpty) {
+      try {
+        selectedDate = DateTime.parse(existingNote.date!);
+      } catch (_) {
+        selectedDate = defaultDate ?? _getDateForWeekday(_selectedWeekday);
+      }
+    } else {
+      selectedDate = defaultDate ?? _getDateForWeekday(_selectedWeekday);
+    }
+
+    final titleCtrl = TextEditingController(text: existingNote?.title ?? '');
+    final contentCtrl = TextEditingController(text: existingNote?.content ?? '');
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: isDark ? AppTheme.cardDark : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetCtx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(sheetCtx).viewInsets.bottom,
+              ),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Handle bar
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: (isDark ? Colors.white : Colors.black).withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+
+                    // Sheet Header
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              isEditing ? Icons.edit_note_rounded : Icons.post_add_rounded,
+                              color: AppTheme.accent,
+                              size: 24,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              isEditing ? 'Notu Düzenle' : 'Yeni Not Ekle',
+                              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 17),
+                            ),
+                          ],
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.pop(sheetCtx),
+                          icon: const Icon(Icons.close_rounded),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Not Zamanlama Türü (Tarih mi Haftalık Tekrar mı?)
+                    const Text(
+                      'Not Zamanlaması',
+                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ChoiceChip(
+                            label: const Center(
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.calendar_today_rounded, size: 14),
+                                  SizedBox(width: 6),
+                                  Text('Belirli Tarih', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                ],
+                              ),
+                            ),
+                            selected: !isRecurring,
+                            selectedColor: (isDark ? AppTheme.accent : AppTheme.brandLight).withOpacity(0.2),
+                            onSelected: (val) {
+                              if (val) setModalState(() => isRecurring = false);
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: ChoiceChip(
+                            label: const Center(
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.repeat_rounded, size: 14),
+                                  SizedBox(width: 6),
+                                  Text('Haftalık Tekrarla', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                ],
+                              ),
+                            ),
+                            selected: isRecurring,
+                            selectedColor: (isDark ? AppTheme.accent : AppTheme.brandLight).withOpacity(0.2),
+                            onSelected: (val) {
+                              if (val) setModalState(() => isRecurring = true);
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Seçime Göre Tarih veya Gün Seçimi
+                    if (!isRecurring) ...[
+                      // Tarih Seçici Butonu
+                      InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () async {
+                          final picked = await showDatePicker(
+                            context: sheetCtx,
+                            initialDate: selectedDate,
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime(2035),
+                            locale: const Locale('tr', 'TR'),
+                          );
+                          if (picked != null) {
+                            setModalState(() {
+                              selectedDate = picked;
+                              selectedWeekday = picked.weekday;
+                            });
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.03),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isDark ? AppTheme.lineDark : AppTheme.lineLight,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.calendar_month_rounded, size: 18, color: AppTheme.accent),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  DateFormat('d MMMM yyyy, EEEE', 'tr_TR').format(selectedDate),
+                                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                                ),
+                              ),
+                              const Icon(Icons.arrow_drop_down_rounded, size: 20),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ] else ...[
+                      // Haftalık Gün Seçimi
+                      Text(
+                        'Tekrarlanacak Gün: ${_days[selectedWeekday - 1]}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? AppTheme.mutedDark : AppTheme.mutedLight,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: List.generate(7, (index) {
+                            final dayIdx = index + 1;
+                            final isSel = selectedWeekday == dayIdx;
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 6),
+                              child: ChoiceChip(
+                                label: Text(_days[index]),
+                                selected: isSel,
+                                labelStyle: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: isSel ? FontWeight.w900 : FontWeight.normal,
+                                  color: isSel ? Colors.white : null,
+                                ),
+                                selectedColor: AppTheme.brandLight,
+                                onSelected: (_) => setModalState(() => selectedWeekday = dayIdx),
+                              ),
+                            );
+                          }),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 14),
+
+                    // Başlık (İsteğe bağlı)
+                    TextField(
+                      controller: titleCtrl,
+                      decoration: InputDecoration(
+                        labelText: 'Başlık (İsteğe bağlı)',
+                        hintText: 'Örn: Sınav Hatırlatması, Ödev',
+                        prefixIcon: const Icon(Icons.title_rounded, size: 18),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Not Açıklaması (Zorunlu)
+                    TextField(
+                      controller: contentCtrl,
+                      maxLines: 4,
+                      minLines: 3,
+                      decoration: InputDecoration(
+                        labelText: 'Not Açıklaması *',
+                        hintText: 'Notunuzu buraya giriniz...',
+                        alignLabelWithHint: true,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        contentPadding: const EdgeInsets.all(14),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Kaydet / Vazgeç Butonları
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            onPressed: () => Navigator.pop(sheetCtx),
+                            child: const Text('Vazgeç', style: TextStyle(fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.brandLight,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            onPressed: () async {
+                              final content = contentCtrl.text.trim();
+                              if (content.isEmpty) {
+                                ScaffoldMessenger.of(sheetCtx).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Lütfen not açıklamasını giriniz.'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                                return;
+                              }
+
+                              final title = titleCtrl.text.trim().isEmpty ? null : titleCtrl.text.trim();
+                              final dateStr = isRecurring ? null : DateFormat('yyyy-MM-dd').format(selectedDate);
+                              final weekdayVal = isRecurring ? selectedWeekday : selectedDate.weekday;
+
+                              Navigator.pop(sheetCtx);
+
+                              final notesProv = context.read<NotesProvider>();
+                              if (isEditing) {
+                                final updated = existingNote.copyWith(
+                                  title: title,
+                                  content: content,
+                                  date: dateStr,
+                                  weekday: weekdayVal,
+                                  isRecurring: isRecurring,
+                                );
+                                final ok = await notesProv.updateNote(updated);
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(ok ? 'Not güncellendi.' : 'Not güncellenemedi.'),
+                                      backgroundColor: ok ? AppTheme.posLight : Colors.red,
+                                    ),
+                                  );
+                                }
+                              } else {
+                                final created = await notesProv.addNote(
+                                  title: title,
+                                  content: content,
+                                  date: dateStr,
+                                  weekday: weekdayVal,
+                                  isRecurring: isRecurring,
+                                );
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(created != null ? 'Not eklendi.' : 'Not eklenemedi.'),
+                                      backgroundColor: created != null ? AppTheme.posLight : Colors.red,
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                            child: Text(
+                              isEditing ? 'Güncelle' : 'Kaydet',
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

@@ -41,6 +41,7 @@ class DatabaseHelper {
         await _ensureTeacherSubjectsTable(db);
         await _ensureStudentColumns(db);
         await _ensureSettingsColumns(db);
+        await _ensureDailyNotesTable(db);
         await _ensureCleanOnboardingData(db);
       },
       onConfigure: _onConfigure,
@@ -144,6 +145,22 @@ class DatabaseHelper {
 
   Future<void> _onConfigure(Database db) async {
     await db.execute('PRAGMA foreign_keys = ON');
+  }
+
+  Future<void> _ensureDailyNotesTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS daily_notes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT,
+        content TEXT NOT NULL,
+        date TEXT,
+        weekday INTEGER,
+        is_recurring INTEGER NOT NULL DEFAULT 0,
+        color TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    ''');
   }
 
   Future<void> _ensureTeacherSubjectsTable(Database db) async {
@@ -343,6 +360,9 @@ class DatabaseHelper {
         FOREIGN KEY (class_id) REFERENCES classes (id) ON DELETE SET NULL
       )
     ''');
+
+    // 12. Günlük / Haftalık Notlar
+    await _ensureDailyNotesTable(db);
 
     // Varsayılan verileri yükle
     await _seedDefaults(db);
@@ -544,6 +564,7 @@ class DatabaseHelper {
       await txn.delete('lesson_plans');
       await txn.delete('timetable_entries');
       await txn.delete('classes');
+      await txn.delete('daily_notes');
     });
   }
 
@@ -560,6 +581,7 @@ class DatabaseHelper {
       await txn.delete('lesson_plans');
       await txn.delete('timetable_entries');
       await txn.delete('classes');
+      await txn.delete('daily_notes');
       await txn.update('settings', {
         'is_onboarding_completed': 1,
         'updated_at': DateTime.now().toIso8601String(),

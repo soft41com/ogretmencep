@@ -6,6 +6,7 @@ import 'providers/app_provider.dart';
 import 'providers/attendance_provider.dart';
 import 'providers/classes_provider.dart';
 import 'providers/exams_provider.dart';
+import 'providers/notes_provider.dart';
 import 'providers/plans_provider.dart';
 import 'providers/schedule_provider.dart';
 import 'providers/students_provider.dart';
@@ -50,6 +51,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => AttendanceProvider()),
         ChangeNotifierProvider(create: (_) => ExamsProvider()..fetchExams()),
         ChangeNotifierProvider(create: (_) => PlansProvider()..fetchPlans()),
+        ChangeNotifierProvider(create: (_) => NotesProvider()..fetchNotes()),
       ],
       child: const OgretmenCepApp(),
     ),

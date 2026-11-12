@@ -548,3 +548,83 @@ class LessonPlanModel {
     );
   }
 }
+
+class DailyNoteModel {
+  final int? id;
+  final String? title;
+  final String content;
+  final String? date; // 'YYYY-MM-DD'
+  final int? weekday; // 1 = Monday, 7 = Sunday
+  final bool isRecurring; // true: haftalık tekrar, false: belirli tarih
+  final String? color;
+  final String createdAt;
+  final String updatedAt;
+
+  DailyNoteModel({
+    this.id,
+    this.title,
+    required this.content,
+    this.date,
+    this.weekday,
+    this.isRecurring = false,
+    this.color,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  factory DailyNoteModel.fromMap(Map<String, dynamic> map) {
+    return DailyNoteModel(
+      id: map['id'] as int?,
+      title: map['title'] as String?,
+      content: map['content'] as String,
+      date: map['date'] as String?,
+      weekday: map['weekday'] as int?,
+      isRecurring: (map['is_recurring'] as int? ?? 0) == 1,
+      color: map['color'] as String?,
+      createdAt: (map['created_at'] as String?) ?? DateTime.now().toIso8601String(),
+      updatedAt: (map['updated_at'] as String?) ?? DateTime.now().toIso8601String(),
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    final map = <String, dynamic>{
+      'title': title,
+      'content': content,
+      'date': date,
+      'weekday': weekday,
+      'is_recurring': isRecurring ? 1 : 0,
+      'color': color,
+      'created_at': createdAt,
+      'updated_at': updatedAt,
+    };
+    if (id != null) {
+      map['id'] = id;
+    }
+    return map;
+  }
+
+  DailyNoteModel copyWith({
+    int? id,
+    String? title,
+    String? content,
+    String? date,
+    int? weekday,
+    bool? isRecurring,
+    String? color,
+    String? createdAt,
+    String? updatedAt,
+  }) {
+    return DailyNoteModel(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      content: content ?? this.content,
+      date: date ?? this.date,
+      weekday: weekday ?? this.weekday,
+      isRecurring: isRecurring ?? this.isRecurring,
+      color: color ?? this.color,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+}
+
