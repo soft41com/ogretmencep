@@ -108,19 +108,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  String _formatTimeRemaining(int totalMinutes) {
-    if (totalMinutes <= 0) return 'Başlamak üzere';
-    final hours = totalMinutes ~/ 60;
-    final minutes = totalMinutes % 60;
-    if (hours > 0 && minutes > 0) {
-      return '$hours saat $minutes dakika';
-    } else if (hours > 0) {
-      return '$hours saat';
-    } else {
-      return '$minutes dakika';
-    }
-  }
-
   int? _parseTimeToMinutes(String? timeStr) {
     if (timeStr == null || !timeStr.contains(':')) return null;
     try {
@@ -325,350 +312,264 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
     );
 
-    // Canlı durum renkleri ve başlıkları
-    Color badgeBg;
-    Color badgeTextColor;
-    String badgeTitle;
-    IconData badgeIcon;
-
-    switch (liveInfo.state) {
-      case TodayLiveState.inProgress:
-        badgeBg = AppTheme.posLight;
-        badgeTextColor = Colors.white;
-        badgeTitle = entry.periodLabel ?? '1. Ders';
-        badgeIcon = Icons.sensors_rounded;
-        break;
-      case TodayLiveState.beforeFirstClass:
-        badgeBg = Colors.amber.shade700;
-        badgeTextColor = Colors.white;
-        badgeTitle = entry.periodLabel ?? '1. Ders';
-        badgeIcon = Icons.alarm_rounded;
-        break;
-      case TodayLiveState.recess:
-        badgeBg = Colors.orange.shade700;
-        badgeTextColor = Colors.white;
-        badgeTitle = 'Teneffüs (${liveInfo.nextClass?.periodLabel ?? "Sıradaki"})';
-        badgeIcon = Icons.coffee_rounded;
-        break;
-      case TodayLiveState.justFinished:
-        badgeBg = Colors.teal.shade600;
-        badgeTextColor = Colors.white;
-        badgeTitle = 'Dersler Bitti';
-        badgeIcon = Icons.task_alt_rounded;
-        break;
-      default:
-        badgeBg = AppTheme.accent;
-        badgeTextColor = const Color(0xFF14231F);
-        badgeTitle = 'Ders Programı';
-        badgeIcon = Icons.school_rounded;
-    }
+    final activeColor = isDark ? AppTheme.posLight : const Color(0xFF1E7E34);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 18),
-      padding: const EdgeInsets.all(18),
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isDark
-              ? [const Color(0xFF1B3126), const Color(0xFF0F1E17)]
-              : [const Color(0xFF17433B), const Color(0xFF0D2924)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(24),
+        color: isDark ? AppTheme.cardDark : Colors.white,
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: liveInfo.state == TodayLiveState.inProgress
-              ? AppTheme.accent.withOpacity(0.4)
-              : Colors.white.withOpacity(0.08),
+          color: activeColor.withOpacity(isDark ? 0.4 : 0.3),
           width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: (liveInfo.state == TodayLiveState.inProgress
-                    ? AppTheme.accent
-                    : AppTheme.brandLight)
-                .withOpacity(0.25),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
+            color: activeColor.withOpacity(isDark ? 0.2 : 0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. Üst Rozet Satırı (Durum Rozeti ve Saat Aralığı)
+          // 1. Üst Rozet Satırı (Aktif Ders Rozeti ve Saat Aralığı)
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: badgeBg,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(badgeIcon, size: 14, color: badgeTextColor),
-                      const SizedBox(width: 5),
-                      Flexible(
-                        child: Text(
-                          badgeTitle,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w900,
-                            color: badgeTextColor,
-                          ),
-                        ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                decoration: BoxDecoration(
+                  color: activeColor.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: activeColor.withOpacity(0.3)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.sensors_rounded,
+                      size: 13,
+                      color: activeColor,
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      entry.periodLabel ?? 'Aktif Ders',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
+                        color: activeColor,
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(10),
+                  color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.04),
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   '${entry.startTime ?? ""} - ${entry.endTime ?? ""}',
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: isDark ? AppTheme.mutedDark : AppTheme.mutedLight,
                     fontFamily: 'monospace',
-                    fontWeight: FontWeight.w900,
-                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 11.5,
                   ),
                 ),
               ),
             ],
           ),
 
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
 
-          // 2. Ana Ders Başlığı ve Detayları
-          if (liveInfo.state == TodayLiveState.justFinished) ...[
-            const Text(
-              'Günün Programı Tamamlandı',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w900,
-                color: Colors.white,
-                letterSpacing: -0.5,
+          // 2. Sınıf ve Ders Bilgisi
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                entry.className ?? '',
+                style: TextStyle(
+                  fontSize: 21,
+                  fontWeight: FontWeight.w900,
+                  color: isDark ? AppTheme.inkDark : AppTheme.inkLight,
+                  letterSpacing: -0.3,
+                ),
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Son dersiniz (${entry.className} • ${entry.subject}) bitti. Bugünkü tüm derslerinizi tamamladınız.',
-              style: const TextStyle(color: Colors.white70, fontSize: 13),
-            ),
-          ] else ...[
-            Row(
-              children: [
-                Expanded(
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '•  ${entry.subject}',
+                  style: TextStyle(
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? AppTheme.mutedDark : AppTheme.brandLight,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (matchedClass.studentCount > 0)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.white.withOpacity(0.06) : const Color(0xFFE8F0EC),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                   child: Text(
-                    entry.className ?? '',
-                    style: const TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white,
-                      letterSpacing: -0.5,
+                    '👤 ${matchedClass.studentCount}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? AppTheme.mutedDark : AppTheme.brandDark,
                     ),
                   ),
                 ),
-                if (matchedClass.studentCount > 0) ...[
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      '👤 ${matchedClass.studentCount} Öğrenci',
-                      style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-            const SizedBox(height: 2),
-            Text(
-              '${entry.subject} • ${entry.classroom ?? "Derslik belirtilmedi"}',
-              style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600),
-            ),
-          ],
-
-          const SizedBox(height: 16),
-
-          // 3. CANLI DURUM ALANI (BAR veya GERİ SAYIM)
-          if (liveInfo.state == TodayLiveState.inProgress) ...[
-            // Canlı Ders Barı ve Dakika İstatistikleri
+            ],
+          ),
+          if (entry.classroom != null && entry.classroom!.isNotEmpty) ...[
+            const SizedBox(height: 3),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    const Icon(Icons.timelapse_rounded, size: 14, color: AppTheme.accent),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Geçen: ${liveInfo.elapsedMinutes} dk',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
+                Icon(
+                  Icons.meeting_room_outlined,
+                  size: 13,
+                  color: isDark ? AppTheme.mutedDark : AppTheme.mutedLight,
                 ),
-                Row(
-                  children: [
-                    const Icon(Icons.hourglass_bottom_rounded, size: 14, color: Colors.orangeAccent),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Kalan: ${liveInfo.remainingMinutes} dk',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.orangeAccent,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            // İlerleme Çubuğu
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: SizedBox(
-                height: 10,
-                child: LinearProgressIndicator(
-                  value: liveInfo.progress,
-                  backgroundColor: Colors.white.withOpacity(0.18),
-                  valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.accent),
-                ),
-              ),
-            ),
-            const SizedBox(height: 6),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
+                const SizedBox(width: 4),
                 Text(
-                  '%${(liveInfo.progress * 100).toInt()} tamamlandı',
-                  style: const TextStyle(fontSize: 11, color: Colors.white60, fontWeight: FontWeight.w600),
+                  entry.classroom!,
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    color: isDark ? AppTheme.mutedDark : AppTheme.mutedLight,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-                if (liveInfo.nextClass != null) ...[
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Sonraki: ${liveInfo.nextClass!.className} (${liveInfo.nextClass!.startTime})',
-                      textAlign: TextAlign.end,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 11, color: Colors.white70, fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                ],
               ],
-            ),
-          ] else if (liveInfo.state == TodayLiveState.beforeFirstClass || liveInfo.state == TodayLiveState.recess) ...[
-            // Başlamamış Ders İçin Canlı Geri Sayım Kutusu
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white.withOpacity(0.15)),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppTheme.accent.withOpacity(0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.timer_outlined, size: 20, color: AppTheme.accent),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Dersin başlamasına ${_formatTimeRemaining(liveInfo.minutesUntilNext)} kaldı',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          liveInfo.state == TodayLiveState.recess
-                              ? 'Teneffüsün tadını çıkarın. Ders saati: ${entry.startTime}'
-                              : 'Bugünün ilk dersi saat ${entry.startTime}\'de başlıyor.',
-                          style: const TextStyle(fontSize: 11, color: Colors.white70),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ] else if (liveInfo.state == TodayLiveState.justFinished) ...[
-            // Son Ders Bittiğinde 10 Dakika Gösterim Uyarısı
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white.withOpacity(0.15)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.celebration_rounded, size: 24, color: Colors.amberAccent),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'İyi Dinlenmeler Öğretmenim!',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Bu bilgilendirme kutusu ${10 - liveInfo.minutesSinceLastEnd} dakika sonra otomatik kapanacaktır.',
-                          style: const TextStyle(fontSize: 11, color: Colors.white70),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
             ),
           ],
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 10),
 
-          // 4. HIZLI EYLEMLER BUTONLARI
+          // 3. İlerleme Çubuğu ve Dakikalar
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: SizedBox(
+              height: 6,
+              child: LinearProgressIndicator(
+                value: liveInfo.progress,
+                backgroundColor: isDark ? Colors.white12 : Colors.black.withOpacity(0.06),
+                valueColor: AlwaysStoppedAnimation<Color>(activeColor),
+              ),
+            ),
+          ),
+          const SizedBox(height: 5),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '${liveInfo.elapsedMinutes} dk geçti (%${(liveInfo.progress * 100).toInt()})',
+                style: TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? AppTheme.mutedDark : AppTheme.mutedLight,
+                ),
+              ),
+              Text(
+                'Bitime ${liveInfo.remainingMinutes} dk kaldı',
+                style: TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w800,
+                  color: activeColor,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          // 4. Hızlı Eylemler: Sınıf, Plan, Yoklama (İkon ve Metinle)
           Row(
             children: [
+              // 1. Sınıf
               Expanded(
                 child: ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: AppTheme.brandLight,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                    minimumSize: const Size.fromHeight(40),
-                    elevation: 2,
+                    backgroundColor: isDark ? const Color(0xFF26322E) : const Color(0xFFF4F6F5),
+                    foregroundColor: isDark ? AppTheme.inkDark : AppTheme.inkLight,
+                    elevation: 0,
+                    side: BorderSide(
+                      color: isDark ? AppTheme.lineDark : AppTheme.lineLight,
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 4),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    minimumSize: Size.zero,
+                  ),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ClassDetailScreen(classModel: matchedClass),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.groups_rounded, size: 16),
+                  label: const Text(
+                    'Sınıf',
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+
+              // 2. Plan
+              Expanded(
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isDark ? const Color(0xFF26322E) : const Color(0xFFF4F6F5),
+                    foregroundColor: isDark ? AppTheme.inkDark : AppTheme.inkLight,
+                    elevation: 0,
+                    side: BorderSide(
+                      color: isDark ? AppTheme.lineDark : AppTheme.lineLight,
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 4),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    minimumSize: Size.zero,
+                  ),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => PlansScreen(initialClassId: matchedClass.id),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.auto_stories_rounded, size: 16),
+                  label: const Text(
+                    'Plan',
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+
+              // 3. Yoklama
+              Expanded(
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.brandLight,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 4),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    minimumSize: Size.zero,
                   ),
                   onPressed: () {
                     Navigator.push(
@@ -679,50 +580,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     );
                   },
                   icon: const Icon(Icons.fact_check_rounded, size: 16),
-                  label: const Text('Yoklama Al', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12)),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white.withOpacity(0.18),
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                    minimumSize: const Size.fromHeight(40),
+                  label: const Text(
+                    'Yoklama',
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
                   ),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ClassDetailScreen(classModel: matchedClass),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.group_rounded, size: 16),
-                  label: const Text('Sınıf Detayı', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
-                ),
-              ),
-              const SizedBox(width: 8),
-              InkWell(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => PlansScreen(initialClassId: matchedClass.id),
-                    ),
-                  );
-                },
-                borderRadius: BorderRadius.circular(14),
-                child: Container(
-                  height: 40,
-                  width: 40,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: const Icon(Icons.menu_book_rounded, color: Colors.white, size: 18),
                 ),
               ),
             ],
@@ -1206,15 +1067,15 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
         actions: [
-          // 🕒 Aktif Canlı Saat Rozeti (Sade, ikonsuz ve tıklamasız gösterim)
+          // 🕒 Aktif Canlı Tarih ve Saat Rozeti (Örn: 12 Kasım • 10:15)
           Center(
             child: Padding(
               padding: const EdgeInsets.only(right: 14),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                   color: (isDark ? AppTheme.accent : AppTheme.brandLight).withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                     color: (isDark ? AppTheme.accent : AppTheme.brandLight).withOpacity(0.35),
                     width: 1.2,
@@ -1227,15 +1088,39 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ],
                 ),
-                child: Text(
-                  DateFormat('HH:mm').format(DateTime.now()),
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0.8,
-                    fontFamily: 'monospace',
-                    color: isDark ? AppTheme.accent : AppTheme.brandLight,
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      DateFormat('d MMMM', 'tr_TR').format(DateTime.now()),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? AppTheme.accent : AppTheme.brandLight,
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 5),
+                      child: Text(
+                        '•',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: (isDark ? AppTheme.accent : AppTheme.brandLight).withOpacity(0.6),
+                        ),
+                      ),
+                    ),
+                    Text(
+                      DateFormat('HH:mm').format(DateTime.now()),
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.6,
+                        fontFamily: 'monospace',
+                        color: isDark ? AppTheme.accent : AppTheme.brandLight,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
