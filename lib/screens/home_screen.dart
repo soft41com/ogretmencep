@@ -1216,7 +1216,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           );
                         },
                         icon: const Icon(Icons.grid_on_rounded, size: 16),
-                        label: const Text('Tüm Haftayı Gör', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                        label: const Text('Tüm Hafta', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                       ),
                     ],
                   ),
