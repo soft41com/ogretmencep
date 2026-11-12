@@ -6,6 +6,7 @@ import '../models/models.dart';
 import '../providers/app_provider.dart';
 import '../providers/classes_provider.dart';
 import '../providers/notes_provider.dart';
+import '../providers/plans_provider.dart';
 import '../providers/schedule_provider.dart';
 import '../theme/app_theme.dart';
 import 'attendance_screen.dart';
@@ -55,20 +56,6 @@ enum LiveIntervalType {
   beforeFirstLesson,
   recess,
   freePeriod,
-}
-
-class InClassProgressData {
-  final int elapsedMinutes;
-  final int remainingMinutes;
-  final int totalMinutes;
-  final double progress;
-
-  InClassProgressData({
-    required this.elapsedMinutes,
-    required this.remainingMinutes,
-    required this.totalMinutes,
-    required this.progress,
-  });
 }
 
 class HomeScreen extends StatefulWidget {
@@ -563,9 +550,12 @@ class _HomeScreenState extends State<HomeScreen> {
               Expanded(
                 child: ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.brandLight,
-                    foregroundColor: Colors.white,
+                    backgroundColor: isDark ? const Color(0xFF26322E) : const Color(0xFFF4F6F5),
+                    foregroundColor: isDark ? AppTheme.inkDark : AppTheme.inkLight,
                     elevation: 0,
+                    side: BorderSide(
+                      color: isDark ? AppTheme.lineDark : AppTheme.lineLight,
+                    ),
                     padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 4),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -670,30 +660,30 @@ class _HomeScreenState extends State<HomeScreen> {
     required TimetableEntryModel entry,
     required ClassesProvider classesProv,
     required bool isCurrentActive,
-    required InClassProgressData? inClassProgress,
+    required LessonPlanModel? nextPlan,
     required bool isDark,
   }) {
     final classColor = entry.classColor != null ? _parseHex(entry.classColor!) : AppTheme.brandLight;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
-      elevation: isCurrentActive ? 3 : 0.5,
+      elevation: isCurrentActive ? 2 : 0.5,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
         side: BorderSide(
           color: isCurrentActive
               ? AppTheme.posLight
               : (isDark ? AppTheme.lineDark : AppTheme.lineLight),
-          width: isCurrentActive ? 2 : 1,
+          width: isCurrentActive ? 1.8 : 1,
         ),
       ),
       color: isCurrentActive
           ? (isDark
-              ? AppTheme.posLight.withOpacity(0.14)
+              ? AppTheme.posLight.withOpacity(0.12)
               : const Color(0xFFE8F5E9))
           : null,
       child: InkWell(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
         onTap: () {
           if (classesProv.classes.isEmpty) return;
           final matchedClass = classesProv.classes.firstWhere(
@@ -708,137 +698,132 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         },
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Column(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: isCurrentActive
-                          ? AppTheme.posLight
-                          : classColor.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: isCurrentActive
-                          ? [
-                              BoxShadow(
-                                color: AppTheme.posLight.withOpacity(0.4),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              )
-                            ]
-                          : null,
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      entry.periodLabel?.split(".").first ?? "D",
-                      style: TextStyle(
-                        color: isCurrentActive ? Colors.white : classColor,
-                        fontWeight: FontWeight.w900,
-                        fontSize: 15,
-                      ),
-                    ),
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: isCurrentActive
+                      ? AppTheme.posLight
+                      : classColor.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: isCurrentActive
+                      ? [
+                          BoxShadow(
+                            color: AppTheme.posLight.withOpacity(0.35),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          )
+                        ]
+                      : null,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  entry.periodLabel?.split(".").first ?? "D",
+                  style: TextStyle(
+                    color: isCurrentActive ? Colors.white : classColor,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 15,
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 1. SATIR: Sınıf • Ders Adı ve Aktif Rozeti
+                    Row(
                       children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                '${entry.className} • ${entry.subject}',
-                                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            if (isCurrentActive) ...[
-                              const SizedBox(width: 6),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.posLight,
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: const Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.sensors_rounded, size: 12, color: Colors.white),
-                                    SizedBox(width: 4),
-                                    Text(
-                                      'ŞU AN DERSTESİNİZ',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 9.5,
-                                        fontWeight: FontWeight.w900,
-                                        letterSpacing: 0.3,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          '${entry.periodLabel ?? ""} (${entry.startTime ?? ""} - ${entry.endTime ?? ""})',
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            fontWeight: isCurrentActive ? FontWeight.bold : FontWeight.normal,
-                            color: isCurrentActive
-                                ? (isDark ? AppTheme.posLight : const Color(0xFF1B5E20))
-                                : (isDark ? AppTheme.mutedDark : AppTheme.mutedLight),
+                        Expanded(
+                          child: Text(
+                            '${entry.className} • ${entry.subject}',
+                            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
+                        if (isCurrentActive) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                            decoration: BoxDecoration(
+                              color: AppTheme.posLight,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.sensors_rounded, size: 11, color: Colors.white),
+                                SizedBox(width: 3),
+                                Text(
+                                  'ŞU AN DERSTESİNİZ',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ],
                     ),
-                  ),
-                  Icon(
-                    Icons.chevron_right,
-                    size: 20,
-                    color: isCurrentActive ? AppTheme.posLight : null,
-                  ),
-                ],
-              ),
-              if (isCurrentActive && inClassProgress != null) ...[
-                const SizedBox(height: 10),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: inClassProgress.progress,
-                    minHeight: 6,
-                    backgroundColor: isDark ? Colors.white12 : Colors.black.withOpacity(0.08),
-                    valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.posLight),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
+                    const SizedBox(height: 3),
+
+                    // 2. SATIR: Ders Periyodu ve Saat Bilgisi
                     Text(
-                      '${inClassProgress.elapsedMinutes} dk geçti (%${(inClassProgress.progress * 100).toInt()})',
+                      '${entry.periodLabel ?? ""} (${entry.startTime ?? ""} - ${entry.endTime ?? ""})',
                       style: TextStyle(
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w600,
-                        color: isDark ? AppTheme.mutedDark : AppTheme.mutedLight,
+                        fontSize: 11.5,
+                        fontWeight: isCurrentActive ? FontWeight.bold : FontWeight.normal,
+                        color: isCurrentActive
+                            ? (isDark ? AppTheme.posLight : const Color(0xFF1B5E20))
+                            : (isDark ? AppTheme.mutedDark : AppTheme.mutedLight),
                       ),
                     ),
-                    Text(
-                      'Dersin bitimine ${inClassProgress.remainingMinutes} dk kaldı',
-                      style: TextStyle(
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w800,
-                        color: isDark ? AppTheme.posLight : const Color(0xFF1B5E20),
+
+                    // 3. SATIR: Yüklenmiş ise Sıradaki Plan Başlığı (Tek satır)
+                    if (nextPlan != null) ...[
+                      const SizedBox(height: 3),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.auto_stories_outlined,
+                            size: 12.5,
+                            color: isDark ? AppTheme.accent : const Color(0xFF2E7D32),
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              nextPlan.weekNo > 0
+                                  ? '${nextPlan.weekNo}. Hafta: ${nextPlan.topic}'
+                                  : nextPlan.topic,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: isDark ? AppTheme.mutedDark : const Color(0xFF4A655E),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
+                    ],
                   ],
                 ),
-              ],
+              ),
+              const SizedBox(width: 6),
+              Icon(
+                Icons.chevron_right,
+                size: 20,
+                color: isCurrentActive ? AppTheme.posLight : null,
+              ),
             ],
           ),
         ),
@@ -881,6 +866,7 @@ class _HomeScreenState extends State<HomeScreen> {
     required List<TimetableEntryModel> dayEntries,
     required List<BellPeriodModel> bellPeriods,
     required ClassesProvider classesProv,
+    required PlansProvider plansProv,
     required bool isDark,
   }) {
     // Dersleri başlangıç saatine göre sırala
@@ -902,7 +888,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 entry: entry,
                 classesProv: classesProv,
                 isCurrentActive: false,
-                inClassProgress: null,
+                nextPlan: plansProv.nextPlansByClassId[entry.classId],
                 isDark: isDark,
               ))
           .toList();
@@ -957,23 +943,10 @@ class _HomeScreenState extends State<HomeScreen> {
       final startM = _parseTimeToMinutes(entry.startTime);
       final endM = _parseTimeToMinutes(entry.endTime);
 
-      bool isCurrentActive = false;
-      InClassProgressData? inClassProgress;
-
-      if (startM != null && endM != null && currentMinutes >= startM && currentMinutes < endM) {
-        isCurrentActive = true;
-        final classTotal = (endM - startM).clamp(1, 180);
-        final classElapsed = (currentMinutes - startM).clamp(0, classTotal);
-        final classRemaining = (endM - currentMinutes).clamp(0, classTotal);
-        final classProg = (classElapsed / classTotal).clamp(0.0, 1.0);
-
-        inClassProgress = InClassProgressData(
-          elapsedMinutes: classElapsed,
-          remainingMinutes: classRemaining,
-          totalMinutes: classTotal,
-          progress: classProg,
-        );
-      }
+      final isCurrentActive = startM != null &&
+          endM != null &&
+          currentMinutes >= startM &&
+          currentMinutes < endM;
 
       // Ders Kartını Ekle
       widgets.add(
@@ -982,7 +955,7 @@ class _HomeScreenState extends State<HomeScreen> {
           entry: entry,
           classesProv: classesProv,
           isCurrentActive: isCurrentActive,
-          inClassProgress: inClassProgress,
+          nextPlan: plansProv.nextPlansByClassId[entry.classId],
           isDark: isDark,
         ),
       );
@@ -1033,6 +1006,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final scheduleProv = context.watch<ScheduleProvider>();
     final classesProv = context.watch<ClassesProvider>();
     final notesProv = context.watch<NotesProvider>();
+    final plansProv = context.watch<PlansProvider>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final teacherName = appProv.settings?.teacherName ?? 'Öğretmenim';
@@ -1132,6 +1106,7 @@ class _HomeScreenState extends State<HomeScreen> {
           await scheduleProv.fetchTimetable();
           await classesProv.fetchClasses();
           await notesProv.fetchNotes();
+          await plansProv.loadNextPlans();
         },
         child: ListView(
           padding: const EdgeInsets.all(16),
@@ -1290,6 +1265,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       dayEntries: dayEntries,
                       bellPeriods: scheduleProv.bellPeriods,
                       classesProv: classesProv,
+                      plansProv: plansProv,
                       isDark: isDark,
                     ),
                 ],

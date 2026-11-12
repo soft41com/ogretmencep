@@ -50,7 +50,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => ScheduleProvider()..fetchTimetable()),
         ChangeNotifierProvider(create: (_) => AttendanceProvider()),
         ChangeNotifierProvider(create: (_) => ExamsProvider()..fetchExams()),
-        ChangeNotifierProvider(create: (_) => PlansProvider()..fetchPlans()),
+        ChangeNotifierProvider(create: (_) => PlansProvider()..loadNextPlans()),
         ChangeNotifierProvider(create: (_) => NotesProvider()..fetchNotes()),
       ],
       child: const OgretmenCepApp(),

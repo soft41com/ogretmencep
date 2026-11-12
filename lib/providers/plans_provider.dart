@@ -4,12 +4,40 @@ import '../models/models.dart';
 
 class PlansProvider with ChangeNotifier {
   List<LessonPlanModel> _plans = [];
+  Map<int, LessonPlanModel> _nextPlansByClassId = {};
   bool _isLoading = false;
   int? _activeClassId;
 
   List<LessonPlanModel> get plans => _plans;
+  Map<int, LessonPlanModel> get nextPlansByClassId => _nextPlansByClassId;
   bool get isLoading => _isLoading;
   int? get activeClassId => _activeClassId;
+
+  /// Her sınıf için sıradaki (pending durumundaki veya ilk sıradaki) planı çeker
+  Future<void> loadNextPlans() async {
+    try {
+      final db = await DatabaseHelper.instance.database;
+      final res = await db.rawQuery('''
+        SELECT * FROM lesson_plans
+        ORDER BY 
+          CASE WHEN status = 'pending' THEN 0 ELSE 1 END ASC,
+          week_no ASC,
+          id ASC
+      ''');
+
+      final Map<int, LessonPlanModel> map = {};
+      for (final r in res) {
+        final cid = r['class_id'] as int?;
+        if (cid != null && !map.containsKey(cid)) {
+          map[cid] = LessonPlanModel.fromMap(r);
+        }
+      }
+      _nextPlansByClassId = map;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('PlansProvider loadNextPlans error: $e');
+    }
+  }
 
   Future<void> fetchPlans({int? classId}) async {
     _isLoading = true;
@@ -58,6 +86,7 @@ class PlansProvider with ChangeNotifier {
       status: nextStatus,
     );
     notifyListeners();
+    await loadNextPlans();
   }
 
   Future<void> addPlan({
@@ -82,6 +111,7 @@ class PlansProvider with ChangeNotifier {
       'created_at': DateTime.now().toIso8601String(),
     });
     await fetchPlans(classId: classId);
+    await loadNextPlans();
   }
 
   Future<void> updatePlan({
@@ -109,18 +139,21 @@ class PlansProvider with ChangeNotifier {
 
     await db.update('lesson_plans', data, where: 'id = ?', whereArgs: [id]);
     await fetchPlans(classId: _activeClassId);
+    await loadNextPlans();
   }
 
   Future<void> deletePlan(int id) async {
     final db = await DatabaseHelper.instance.database;
     await db.delete('lesson_plans', where: 'id = ?', whereArgs: [id]);
     await fetchPlans(classId: _activeClassId);
+    await loadNextPlans();
   }
 
   Future<void> clearPlansForClass(int classId) async {
     final db = await DatabaseHelper.instance.database;
     await db.delete('lesson_plans', where: 'class_id = ?', whereArgs: [classId]);
     await fetchPlans(classId: classId);
+    await loadNextPlans();
   }
 
   Future<int> bulkImportPlans({
@@ -163,6 +196,7 @@ class PlansProvider with ChangeNotifier {
 
     await batch.commit(noResult: true);
     await fetchPlans(classId: classId);
+    await loadNextPlans();
     return items.length;
   }
 
@@ -201,5 +235,6 @@ class PlansProvider with ChangeNotifier {
 
     await batch.commit(noResult: true);
     await fetchPlans(classId: targetClassId);
+    await loadNextPlans();
   }
 }
