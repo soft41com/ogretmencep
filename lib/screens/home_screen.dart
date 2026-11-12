@@ -1255,27 +1255,7 @@ class _HomeScreenState extends State<HomeScreen> {
             if (liveInfo.state == TodayLiveState.inProgress && _selectedWeekday == todayWeekday)
               _buildLiveHeroCard(context, liveInfo, classesProv, isDark),
 
-            // 📅 Ders Programı Başlığı ve Gün Seçici Hap Butonlar (Pazartesi ... Cuma)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Ders Programı',
-                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
-                ),
-                TextButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const TimetableMatrixScreen()),
-                    );
-                  },
-                  icon: const Icon(Icons.grid_on_rounded, size: 16),
-                  label: const Text('Tüm Haftayı Gör', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
+            // 📅 Gün Seçici Hap Butonlar (Pazartesi ... Cuma)
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
@@ -1320,10 +1300,68 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ],
               ),
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  // Ders Programı Başlığı ve Tüm Haftayı Gör Butonu
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: AppTheme.brandLight.withOpacity(0.18),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(Icons.calendar_today_rounded, size: 18, color: AppTheme.brandLight),
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'Ders Programı',
+                            style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+                          ),
+                          if (dayEntries.isNotEmpty) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: (isDark ? AppTheme.accent : AppTheme.brandLight).withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                '${dayEntries.length}',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w900,
+                                  color: isDark ? AppTheme.accent : AppTheme.brandLight,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      TextButton.icon(
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const TimetableMatrixScreen()),
+                          );
+                        },
+                        icon: const Icon(Icons.grid_on_rounded, size: 16),
+                        label: const Text('Tüm Haftayı Gör', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+
                   if (dayEntries.isEmpty)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
