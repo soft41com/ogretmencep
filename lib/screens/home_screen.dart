@@ -1230,32 +1230,37 @@ class _HomeScreenState extends State<HomeScreen> {
                           const Text('☕', style: TextStyle(fontSize: 32)),
                           const SizedBox(height: 8),
                           Text(
-                            '${_days[_selectedWeekday - 1]} günü için ders programı boş.',
+                            scheduleProv.timetable.isEmpty
+                                ? 'Henüz ders programı oluşturulmamış.'
+                                : '${_days[_selectedWeekday - 1]} günü için ders programı boş.',
                             style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Hızlı matris ile saniyeler içinde ders ekleyebilirsiniz.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 11, color: isDark ? AppTheme.mutedDark : AppTheme.mutedLight),
-                          ),
-                          const SizedBox(height: 12),
-                          ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppTheme.brandLight,
-                              foregroundColor: Colors.white,
-                              visualDensity: VisualDensity.compact,
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          // Yalnızca hiçbir güne ders ataması yapılmamışsa buton ve bilgi gösterilir
+                          if (scheduleProv.timetable.isEmpty) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              'Hızlı matris ile saniyeler içinde derslerinizi atayabilirsiniz.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(fontSize: 11, color: isDark ? AppTheme.mutedDark : AppTheme.mutedLight),
                             ),
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (_) => const TimetableMatrixScreen()),
-                              );
-                            },
-                            icon: const Icon(Icons.add, size: 16),
-                            label: const Text('Matristen Ders Ata'),
-                          ),
+                            const SizedBox(height: 12),
+                            ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppTheme.brandLight,
+                                foregroundColor: Colors.white,
+                                visualDensity: VisualDensity.compact,
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                              ),
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => const TimetableMatrixScreen()),
+                                );
+                              },
+                              icon: const Icon(Icons.add, size: 16),
+                              label: const Text('Matristen Ders Ata'),
+                            ),
+                          ],
                         ],
                       ),
                     )
