@@ -62,14 +62,47 @@ class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<HomeScreen> createState() => HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class HomeScreenState extends State<HomeScreen> {
   int _selectedWeekday = DateTime.now().weekday <= 5 ? DateTime.now().weekday : 1;
+  double _dragDistance = 0;
   Timer? _liveTimer;
 
   final List<String> _days = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
+
+  /// Alt menüdeki Bugün butonuna basıldığında bugünün gününü seçili yapar
+  void selectToday() {
+    final todayWeekday = DateTime.now().weekday;
+    final timetableDays = context.read<AppProvider>().timetableDays;
+    final target = todayWeekday <= timetableDays ? todayWeekday : 1;
+    setState(() {
+      _selectedWeekday = target;
+    });
+  }
+
+  /// Sola doğru kayma hareketinde önceki güne geçiş
+  void _goToPreviousDay(int timetableDays) {
+    setState(() {
+      if (_selectedWeekday > 1) {
+        _selectedWeekday--;
+      } else {
+        _selectedWeekday = timetableDays;
+      }
+    });
+  }
+
+  /// Sağa doğru kayma hareketinde sonraki güne geçiş
+  void _goToNextDay(int timetableDays) {
+    setState(() {
+      if (_selectedWeekday < timetableDays) {
+        _selectedWeekday++;
+      } else {
+        _selectedWeekday = 1;
+      }
+    });
+  }
 
   @override
   void initState() {
@@ -1101,14 +1134,31 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          await scheduleProv.fetchTimetable();
-          await classesProv.fetchClasses();
-          await notesProv.fetchNotes();
-          await plansProv.loadNextPlans();
+      body: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onHorizontalDragStart: (_) {
+          _dragDistance = 0;
         },
-        child: ListView(
+        onHorizontalDragUpdate: (details) {
+          _dragDistance += details.delta.dx;
+        },
+        onHorizontalDragEnd: (details) {
+          final velocity = details.primaryVelocity ?? 0;
+          if (_dragDistance < -40 || velocity < -180) {
+            _goToPreviousDay(timetableDays);
+          } else if (_dragDistance > 40 || velocity > 180) {
+            _goToNextDay(timetableDays);
+          }
+          _dragDistance = 0;
+        },
+        child: RefreshIndicator(
+          onRefresh: () async {
+            await scheduleProv.fetchTimetable();
+            await classesProv.fetchClasses();
+            await notesProv.fetchNotes();
+            await plansProv.loadNextPlans();
+          },
+          child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
             // 🌟 Canlı Ders Bilgilendirme Kutusu (Yalnızca aktif ders saatindeyken gösterilir)
@@ -1291,8 +1341,9 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   /// Seçili haftanın gününün mevcut takvimdeki DateTime karşılığını döner
   DateTime _getDateForWeekday(int targetWeekday) {

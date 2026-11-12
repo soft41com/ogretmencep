@@ -19,6 +19,7 @@ class _HomeShellState extends State<HomeShell> {
   int _currentIndex = 2;
   final List<int> _tabHistory = [2];
   DateTime? _lastBackPressTime;
+  final GlobalKey<HomeScreenState> _homeKey = GlobalKey<HomeScreenState>();
 
   @override
   void initState() {
@@ -28,15 +29,18 @@ class _HomeShellState extends State<HomeShell> {
     });
   }
 
-  final List<Widget> _screens = const [
-    ClassesScreen(),    // 0: Sınıflar
-    AttendanceScreen(), // 1: Yoklama
-    HomeScreen(),       // 2: Bugün (Ortada)
-    ExamsScreen(),      // 3: Sınavlar
-    SettingsScreen(),   // 4: Ayarlar
+  late final List<Widget> _screens = [
+    const ClassesScreen(),    // 0: Sınıflar
+    const AttendanceScreen(), // 1: Yoklama
+    HomeScreen(key: _homeKey),// 2: Bugün (Ortada)
+    const ExamsScreen(),      // 3: Sınavlar
+    const SettingsScreen(),   // 4: Ayarlar
   ];
 
   void _onTabSelected(int index) {
+    if (index == 2) {
+      _homeKey.currentState?.selectToday();
+    }
     if (_currentIndex == index) return;
     setState(() {
       _currentIndex = index;
@@ -48,6 +52,10 @@ class _HomeShellState extends State<HomeShell> {
   Future<bool> _handleWillPop() async {
     // Eğer sekme geçmişinde önceki sekmeler varsa onlara geri dön
     if (_tabHistory.length > 1) {
+      final prev = _tabHistory[_tabHistory.length - 2];
+      if (prev == 2) {
+        _homeKey.currentState?.selectToday();
+      }
       setState(() {
         _tabHistory.removeLast();
         _currentIndex = _tabHistory.last;
@@ -57,6 +65,7 @@ class _HomeShellState extends State<HomeShell> {
 
     // Ana sekme olan Bugün'de değilsek, Bugün'e dön
     if (_currentIndex != 2) {
+      _homeKey.currentState?.selectToday();
       setState(() {
         _currentIndex = 2;
         _tabHistory.clear();
