@@ -769,12 +769,41 @@ class _ClassDetailScreenState extends State<ClassDetailScreen> {
                                           ),
                                         ),
                                         IconButton(
-                                          icon: const Icon(Icons.delete_outline, size: 16),
+                                          icon: const Icon(Icons.delete_outline_rounded, size: 18, color: AppTheme.negLight),
                                           padding: EdgeInsets.zero,
                                           constraints: const BoxConstraints(),
+                                          tooltip: 'Notu Sil',
                                           onPressed: () async {
-                                            await prov.deleteStudentNote(n.id);
-                                            setSheetState(() {});
+                                            final confirm = await showDialog<bool>(
+                                              context: context,
+                                              builder: (dialogCtx) => AlertDialog(
+                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                                title: const Text('Notu Sil', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                                content: Text(
+                                                  '${getNoteLabel(n.type)} kaydını silmek istediğinize emin misiniz?\n\n"${n.body.length > 80 ? '${n.body.substring(0, 80)}...' : n.body}"\n\nBu işlem geri alınamaz.',
+                                                  style: const TextStyle(fontSize: 13, height: 1.4),
+                                                ),
+                                                actions: [
+                                                  TextButton(
+                                                    onPressed: () => Navigator.pop(dialogCtx, false),
+                                                    child: const Text('Vazgeç'),
+                                                  ),
+                                                  ElevatedButton(
+                                                    style: ElevatedButton.styleFrom(
+                                                      backgroundColor: AppTheme.negLight,
+                                                      foregroundColor: Colors.white,
+                                                    ),
+                                                    onPressed: () => Navigator.pop(dialogCtx, true),
+                                                    child: const Text('Sil', style: TextStyle(fontWeight: FontWeight.bold)),
+                                                  ),
+                                                ],
+                                              ),
+                                            );
+
+                                            if (confirm == true) {
+                                              await prov.deleteStudentNote(n.id);
+                                              setSheetState(() {});
+                                            }
                                           },
                                         ),
                                       ],
