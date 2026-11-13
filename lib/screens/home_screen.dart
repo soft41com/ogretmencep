@@ -1168,95 +1168,29 @@ class HomeScreenState extends State<HomeScreen> {
 
             // 📅 Üst Satır: Aktif Gün Başlığı (Örn: 7 Kasım Pazartesi)
             Padding(
-              padding: const EdgeInsets.only(left: 4, right: 4, bottom: 10),
+              padding: const EdgeInsets.only(left: 4, right: 4, bottom: 8),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: (isDark ? AppTheme.accent : AppTheme.brandLight).withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(
-                          Icons.calendar_today_rounded,
-                          size: 15,
-                          color: isDark ? AppTheme.accent : AppTheme.brandLight,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        DateFormat('d MMMM EEEE', 'tr_TR').format(selectedDate),
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.2,
-                          color: isDark ? AppTheme.inkDark : AppTheme.inkLight,
-                        ),
-                      ),
-                    ],
+                  Icon(
+                    Icons.calendar_today_rounded,
+                    size: 14,
+                    color: isDark ? AppTheme.accent : AppTheme.brandLight,
                   ),
-                  if (_selectedWeekday == todayWeekday)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
-                      decoration: BoxDecoration(
-                        color: (isDark ? AppTheme.accent : AppTheme.brandLight).withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: (isDark ? AppTheme.accent : AppTheme.brandLight).withOpacity(0.28),
-                        ),
-                      ),
-                      child: Text(
-                        'Bugün',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                          color: isDark ? AppTheme.accent : AppTheme.brandLight,
-                        ),
-                      ),
-                    )
-                  else
-                    InkWell(
-                      onTap: selectToday,
-                      borderRadius: BorderRadius.circular(10),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
-                        decoration: BoxDecoration(
-                          color: (isDark ? AppTheme.accent : AppTheme.brandLight).withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: (isDark ? AppTheme.accent : AppTheme.brandLight).withOpacity(0.2),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.restore_rounded,
-                              size: 13,
-                              color: isDark ? AppTheme.accent : AppTheme.brandLight,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Bugün',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                                color: isDark ? AppTheme.accent : AppTheme.brandLight,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                  const SizedBox(width: 8),
+                  Text(
+                    DateFormat('d MMMM EEEE', 'tr_TR').format(selectedDate),
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.2,
+                      color: isDark ? AppTheme.inkDark : AppTheme.inkLight,
                     ),
+                  ),
                 ],
               ),
             ),
 
-            // 📅 Alt Satır: Hafta Günleri (5 veya 7 Gün Satıra Tam Sığdırılmış)
+            // 📅 Alt Satır: Hafta Günleri (5 veya 7 Gün Minimalist Gösterim)
             Row(
               children: List.generate(timetableDays, (index) {
                 final weekday = index + 1;
@@ -1271,44 +1205,30 @@ class HomeScreenState extends State<HomeScreen> {
 
                 return Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 2.5),
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
                     child: Material(
                       color: Colors.transparent,
                       child: InkWell(
                         onTap: () => setState(() => _selectedWeekday = weekday),
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(12),
                         child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 180),
-                          curve: Curves.easeInOut,
-                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          duration: const Duration(milliseconds: 150),
+                          padding: const EdgeInsets.symmetric(vertical: 7),
                           decoration: BoxDecoration(
                             color: isSelected
                                 ? selectedBg
-                                : (isDark ? AppTheme.cardDark : AppTheme.cardLight),
-                            borderRadius: BorderRadius.circular(14),
+                                : (isDark
+                                    ? AppTheme.cardDark.withOpacity(0.5)
+                                    : Colors.white.withOpacity(0.8)),
+                            borderRadius: BorderRadius.circular(12),
                             border: Border.all(
                               color: isSelected
                                   ? selectedBg
-                                  : (isToday
-                                      ? (isDark ? AppTheme.accent : AppTheme.brandLight).withOpacity(0.55)
-                                      : (isDark ? AppTheme.lineDark : AppTheme.lineLight)),
-                              width: isSelected ? 1.5 : (isToday ? 1.2 : 1),
+                                  : (isDark
+                                      ? AppTheme.lineDark.withOpacity(0.5)
+                                      : AppTheme.lineLight.withOpacity(0.7)),
+                              width: 1,
                             ),
-                            boxShadow: isSelected
-                                ? [
-                                    BoxShadow(
-                                      color: selectedBg.withOpacity(isDark ? 0.35 : 0.22),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 3),
-                                    ),
-                                  ]
-                                : [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(isDark ? 0.15 : 0.03),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 1),
-                                    ),
-                                  ],
                           ),
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
@@ -1319,22 +1239,24 @@ class HomeScreenState extends State<HomeScreen> {
                                 child: Text(
                                   dayNumber,
                                   style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w900,
+                                    fontSize: 15,
+                                    fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
                                     height: 1.1,
                                     color: isSelected
                                         ? selectedFg
-                                        : (isDark ? AppTheme.inkDark : AppTheme.inkLight),
+                                        : (isToday
+                                            ? (isDark ? AppTheme.accent : AppTheme.brandLight)
+                                            : (isDark ? AppTheme.inkDark : AppTheme.inkLight)),
                                   ),
                                 ),
                               ),
-                              const SizedBox(height: 3),
+                              const SizedBox(height: 2),
                               FittedBox(
                                 fit: BoxFit.scaleDown,
                                 child: Text(
                                   shortName,
                                   style: TextStyle(
-                                    fontSize: 11,
+                                    fontSize: 10.5,
                                     fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                                     color: isSelected
                                         ? selectedFg.withOpacity(0.9)
@@ -1344,18 +1266,20 @@ class HomeScreenState extends State<HomeScreen> {
                                   ),
                                 ),
                               ),
-                              if (isToday && !isSelected) ...[
-                                const SizedBox(height: 3),
-                                Container(
-                                  width: 4,
-                                  height: 4,
-                                  decoration: BoxDecoration(
-                                    color: isDark ? AppTheme.accent : AppTheme.brandLight,
-                                    shape: BoxShape.circle,
-                                  ),
+                              const SizedBox(height: 3),
+                              // Minik minimalist bugün noktası
+                              Container(
+                                width: 3.5,
+                                height: 3.5,
+                                decoration: BoxDecoration(
+                                  color: isToday
+                                      ? (isSelected
+                                          ? selectedFg
+                                          : (isDark ? AppTheme.accent : AppTheme.brandLight))
+                                      : Colors.transparent,
+                                  shape: BoxShape.circle,
                                 ),
-                              ] else
-                                const SizedBox(height: 7),
+                              ),
                             ],
                           ),
                         ),
