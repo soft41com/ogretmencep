@@ -1043,7 +1043,9 @@ class HomeScreenState extends State<HomeScreen> {
     final plansProv = context.watch<PlansProvider>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final teacherName = appProv.settings?.teacherName ?? 'Öğretmenim';
+    final teacherName = (appProv.settings?.teacherName.trim().isNotEmpty == true)
+        ? appProv.settings!.teacherName.trim()
+        : 'Öğretmenim';
     final timetableDays = appProv.timetableDays;
 
     if (_selectedWeekday > timetableDays) {

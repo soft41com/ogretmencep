@@ -73,7 +73,10 @@ class AppProvider with ChangeNotifier {
     int? lessonEndMinutes,
     String? lessonNotifyType,
   }) async {
-    if (_settings == null) return;
+    if (_settings == null) {
+      await loadSettings();
+      if (_settings == null) return;
+    }
 
     final updated = _settings!.copyWith(
       teacherName: teacherName,

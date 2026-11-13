@@ -52,41 +52,12 @@ class DatabaseHelper {
     try {
       final settingsRes = await db.query('settings', limit: 1);
       if (settingsRes.isNotEmpty) {
-        final isOnboardingCompleted = settingsRes.first['is_onboarding_completed'] == 1;
-        if (!isOnboardingCompleted) {
-          final schoolName = settingsRes.first['school_name']?.toString() ?? '';
-          // Eğer kurulum tamamlanmamış ve varsayılan test verisi duruyorsa temizle
-          if (schoolName == 'Atatürk Anadolu Lisesi' || schoolName.isEmpty) {
-            final classCountRes = await db.rawQuery("SELECT COUNT(*) as cnt FROM classes WHERE name IN ('9-A', '10-B')");
-            final cnt = (classCountRes.first['cnt'] as int?) ?? 0;
-            if (cnt > 0) {
-              await db.transaction((txn) async {
-                await txn.delete('student_evaluations');
-                await txn.delete('student_notes');
-                await txn.delete('attendances');
-                await txn.delete('exam_scores');
-                await txn.delete('exams');
-                await txn.delete('students');
-                await txn.delete('lesson_plans');
-                await txn.delete('timetable_entries');
-                await txn.delete('classes');
-                await txn.delete('teacher_subjects');
-                await txn.update('settings', {
-                  'teacher_name': '',
-                  'school_name': '',
-                  'branch': '',
-                  'updated_at': DateTime.now().toIso8601String(),
-                });
-              });
-            }
-          }
-          final currentAy = settingsRes.first['academic_year']?.toString();
-          if (currentAy == null || currentAy.isEmpty || currentAy == '2024-2025') {
-            await db.update('settings', {
-              'academic_year': defaultAcademicYear,
-              'updated_at': DateTime.now().toIso8601String(),
-            });
-          }
+        final currentAy = settingsRes.first['academic_year']?.toString();
+        if (currentAy == null || currentAy.isEmpty || currentAy == '2024-2025') {
+          await db.update('settings', {
+            'academic_year': defaultAcademicYear,
+            'updated_at': DateTime.now().toIso8601String(),
+          });
         }
       }
     } catch (_) {}

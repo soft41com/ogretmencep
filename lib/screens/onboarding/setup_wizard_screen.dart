@@ -105,7 +105,36 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
 
   Future<void> _finishSetup() async {
     final appProv = context.read<AppProvider>();
-    await appProv.setOnboardingCompleted(true);
+    final teacherNameInput = _nameCtrl.text.trim();
+    final schoolNameInput = _schoolCtrl.text.trim();
+    final branchInput = _branchCtrl.text.trim();
+    final yearInput = _yearCtrl.text.trim();
+
+    // Kurulum tamamlanırken profil bilgilerini kesin olarak veritabanına kaydet
+    await appProv.updateSettings(
+      teacherName: teacherNameInput.isNotEmpty
+          ? teacherNameInput
+          : (appProv.settings?.teacherName.trim().isNotEmpty == true
+              ? appProv.settings!.teacherName.trim()
+              : 'Öğretmen'),
+      schoolName: schoolNameInput.isNotEmpty
+          ? schoolNameInput
+          : (appProv.settings?.schoolName.trim().isNotEmpty == true
+              ? appProv.settings!.schoolName.trim()
+              : ''),
+      branch: branchInput.isNotEmpty
+          ? branchInput
+          : (appProv.settings?.branch.trim().isNotEmpty == true
+              ? appProv.settings!.branch.trim()
+              : ''),
+      academicYear: yearInput.isNotEmpty
+          ? yearInput
+          : appProv.activeAcademicYear,
+      isOnboardingCompleted: true,
+    );
+
+    // Güncel ayarları yeniden yükle
+    await appProv.loadSettings();
 
     if (!mounted) return;
     if (widget.isFromSettings) {
@@ -150,11 +179,16 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
   // --- ADIM 1: PROFİL KAYDET ---
   Future<void> _saveStep1() async {
     final appProv = context.read<AppProvider>();
+    final teacherNameInput = _nameCtrl.text.trim();
+    final schoolNameInput = _schoolCtrl.text.trim();
+    final branchInput = _branchCtrl.text.trim();
+    final yearInput = _yearCtrl.text.trim();
+
     await appProv.updateSettings(
-      teacherName: _nameCtrl.text.trim().isNotEmpty ? _nameCtrl.text.trim() : null,
-      schoolName: _schoolCtrl.text.trim().isNotEmpty ? _schoolCtrl.text.trim() : null,
-      branch: _branchCtrl.text.trim().isNotEmpty ? _branchCtrl.text.trim() : null,
-      academicYear: _yearCtrl.text.trim().isNotEmpty ? _yearCtrl.text.trim() : null,
+      teacherName: teacherNameInput.isNotEmpty ? teacherNameInput : 'Öğretmen',
+      schoolName: schoolNameInput,
+      branch: branchInput,
+      academicYear: yearInput.isNotEmpty ? yearInput : AppProvider.defaultAcademicYear,
     );
     _nextStep();
   }
@@ -277,7 +311,23 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          onPressed: _nextStep,
+                          onPressed: () async {
+                            if (_currentStep == 0) {
+                              final name = _nameCtrl.text.trim();
+                              final school = _schoolCtrl.text.trim();
+                              final branch = _branchCtrl.text.trim();
+                              final year = _yearCtrl.text.trim();
+                              if (name.isNotEmpty || school.isNotEmpty || branch.isNotEmpty) {
+                                await context.read<AppProvider>().updateSettings(
+                                  teacherName: name.isNotEmpty ? name : null,
+                                  schoolName: school.isNotEmpty ? school : null,
+                                  branch: branch.isNotEmpty ? branch : null,
+                                  academicYear: year.isNotEmpty ? year : null,
+                                );
+                              }
+                            }
+                            _nextStep();
+                          },
                           child: const Text(
                             'Bu Adımı Atla',
                             style: TextStyle(fontWeight: FontWeight.w700),
@@ -296,7 +346,7 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          onPressed: _onSaveStepPressed,
+                          onPressed: () => _onSaveStepPressed(),
                           child: const Text(
                             'Kaydet & İlerle →',
                             style: TextStyle(fontWeight: FontWeight.bold),
@@ -335,16 +385,16 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
     );
   }
 
-  void _onSaveStepPressed() {
+  Future<void> _onSaveStepPressed() async {
     switch (_currentStep) {
       case 0:
-        _saveStep1();
+        await _saveStep1();
         break;
       case 1:
         _saveStep2();
         break;
       case 2:
-        _saveStep3();
+        await _saveStep3();
         break;
       case 3:
         _saveStep4();
@@ -1539,7 +1589,11 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
                 _buildSummaryRow(
                   Icons.person_outline_rounded,
                   'Öğretmen',
-                  appProv.settings?.teacherName ?? 'Tanımlanmadı',
+                  _nameCtrl.text.trim().isNotEmpty
+                      ? _nameCtrl.text.trim()
+                      : (appProv.settings?.teacherName.trim().isNotEmpty == true
+                          ? appProv.settings!.teacherName.trim()
+                          : 'Tanımlanmadı'),
                 ),
                 const Divider(height: 18),
                 _buildSummaryRow(
