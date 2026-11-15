@@ -42,6 +42,8 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+.cxx/
+**/android/app/.cxx/
 
 # Package binaries / Derleme çıktıları (GitHub 100MB limiti ve repo şişmesini önleme)
 *.apk

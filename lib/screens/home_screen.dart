@@ -66,48 +66,41 @@ class HomeScreen extends StatefulWidget {
 }
 
 class HomeScreenState extends State<HomeScreen> {
-  int _selectedWeekday = DateTime.now().weekday <= 5 ? DateTime.now().weekday : 1;
+  late DateTime _selectedDate;
+  int get _selectedWeekday => _selectedDate.weekday;
   double _dragDistance = 0;
   Timer? _liveTimer;
 
   final List<String> _days = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
   final List<String> _shortDays = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
 
-  /// Alt menüdeki Bugün butonuna basıldığında bugünün gününü seçili yapar
+  /// Alt menüdeki Bugün butonuna basıldığında bugünün gününü ve tarihini seçili yapar
   void selectToday() {
-    final todayWeekday = DateTime.now().weekday;
-    final timetableDays = context.read<AppProvider>().timetableDays;
-    final target = todayWeekday <= timetableDays ? todayWeekday : 1;
+    final now = DateTime.now();
     setState(() {
-      _selectedWeekday = target;
+      _selectedDate = DateTime(now.year, now.month, now.day);
     });
   }
 
-  /// Sağa kaydırmada: Önceki güne geçiş
-  void _goToPreviousDay(int timetableDays) {
+  /// Sağa kaydırmada: Önceki güne geçiş (Pazartesiden önceki haftanın Pazarına)
+  void _goToPreviousDay([int? timetableDays]) {
     setState(() {
-      if (_selectedWeekday > 1) {
-        _selectedWeekday--;
-      } else {
-        _selectedWeekday = timetableDays;
-      }
+      _selectedDate = _selectedDate.subtract(const Duration(days: 1));
     });
   }
 
-  /// Sola kaydırmada: Sonraki güne geçiş
-  void _goToNextDay(int timetableDays) {
+  /// Sola kaydırmada: Sonraki güne geçiş (Pazardan sonraki haftanın Pazartesisine)
+  void _goToNextDay([int? timetableDays]) {
     setState(() {
-      if (_selectedWeekday < timetableDays) {
-        _selectedWeekday++;
-      } else {
-        _selectedWeekday = 1;
-      }
+      _selectedDate = _selectedDate.add(const Duration(days: 1));
     });
   }
 
   @override
   void initState() {
     super.initState();
+    final now = DateTime.now();
+    _selectedDate = DateTime(now.year, now.month, now.day);
     // 5 saniyede bir saati ve ilerleme çubuğunu otomatik canlı güncelle
     _liveTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       if (mounted) setState(() {});
@@ -912,7 +905,7 @@ class HomeScreenState extends State<HomeScreen> {
     });
 
     final now = DateTime.now();
-    final isToday = _selectedWeekday == now.weekday;
+    final isToday = now.year == _selectedDate.year && now.month == _selectedDate.month && now.day == _selectedDate.day;
     final currentMinutes = now.hour * 60 + now.minute;
 
     if (!isToday || sortedEntries.isEmpty) {
@@ -1047,13 +1040,11 @@ class HomeScreenState extends State<HomeScreen> {
         ? appProv.settings!.teacherName.trim()
         : 'Öğretmenim';
     final timetableDays = appProv.timetableDays;
-
-    if (_selectedWeekday > timetableDays) {
-      _selectedWeekday = 1;
-    }
+    final now = DateTime.now();
+    final isTodayDate = now.year == _selectedDate.year && now.month == _selectedDate.month && now.day == _selectedDate.day;
 
     // Bugünün gerçek gününe göre canlı durum hesaplaması
-    final todayWeekday = DateTime.now().weekday;
+    final todayWeekday = now.weekday;
     final todayEntries = scheduleProv.getDayEntries(todayWeekday);
     final liveInfo = _computeTodayLiveInfo(todayEntries, scheduleProv.bellPeriods, timetableDays);
 
@@ -1061,7 +1052,7 @@ class HomeScreenState extends State<HomeScreen> {
     final dayEntries = scheduleProv.getDayEntries(_selectedWeekday);
 
     // Seçili güne ait tarih ve notlar
-    final selectedDate = _getDateForWeekday(_selectedWeekday);
+    final selectedDate = _selectedDate;
     final dayNotes = notesProv.getNotesForDay(_selectedWeekday, selectedDate);
 
     return Scaffold(
@@ -1164,8 +1155,8 @@ class HomeScreenState extends State<HomeScreen> {
           child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            // 🌟 Canlı Ders Bilgilendirme Kutusu (Yalnızca aktif ders saatindeyken gösterilir)
-            if (liveInfo.state == TodayLiveState.inProgress && _selectedWeekday == todayWeekday)
+            // 🌟 Canlı Ders Bilgilendirme Kutusu (Yalnızca aktif ders saatindeyken ve bugünün tarihine bakılıyorken gösterilir)
+            if (liveInfo.state == TodayLiveState.inProgress && isTodayDate)
               _buildLiveHeroCard(context, liveInfo, classesProv, isDark),
 
             // 📅 Üst Satır: Aktif Gün Başlığı (Örn: 7 Kasım Pazartesi)
@@ -1188,17 +1179,38 @@ class HomeScreenState extends State<HomeScreen> {
                       color: isDark ? AppTheme.inkDark : AppTheme.inkLight,
                     ),
                   ),
+                  const Spacer(),
+                  if (!isTodayDate)
+                    InkWell(
+                      onTap: selectToday,
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: (isDark ? AppTheme.accent : AppTheme.brandLight).withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'Bugüne Dön',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? AppTheme.accent : AppTheme.brandLight,
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
 
-            // 📅 Alt Satır: Hafta Günleri (5 veya 7 Gün Minimalist Gösterim)
+            // 📅 Alt Satır: Hafta Günleri (7 Gün Minimalist Gösterim)
             Row(
               children: List.generate(timetableDays, (index) {
                 final weekday = index + 1;
                 final isSelected = _selectedWeekday == weekday;
-                final isToday = todayWeekday == weekday;
                 final date = _getDateForWeekday(weekday);
+                final isToday = now.year == date.year && now.month == date.month && now.day == date.day;
                 final dayNumber = '${date.day}';
                 final shortName = _shortDays[index];
 
@@ -1211,7 +1223,7 @@ class HomeScreenState extends State<HomeScreen> {
                     child: Material(
                       color: Colors.transparent,
                       child: InkWell(
-                        onTap: () => setState(() => _selectedWeekday = weekday),
+                        onTap: () => setState(() => _selectedDate = date),
                         borderRadius: BorderRadius.circular(12),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 150),
@@ -1293,148 +1305,41 @@ class HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 14),
 
-            // 1. KUTU: Ders Programı Kutusu
-            Container(
-              decoration: BoxDecoration(
-                color: isDark ? AppTheme.cardDark : AppTheme.cardLight,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                  color: isDark ? AppTheme.lineDark : AppTheme.lineLight,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(isDark ? 0.18 : 0.03),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+            // Ders tanımı yapılmamışsa (dayEntries boşsa) Notlar önce, Ders Programı sonra.
+            // Ders tanımı varsa mevcutta olduğu gibi Ders Programı önce, Notlar sonra.
+            if (dayEntries.isEmpty) ...[
+              _buildNotesContainer(
+                context: context,
+                dayNotes: dayNotes,
+                isDark: isDark,
+                selectedDate: selectedDate,
               ),
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Ders Programı Başlığı ve Tüm Haftayı Gör Butonu
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: AppTheme.brandLight.withOpacity(0.18),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: const Icon(Icons.calendar_today_rounded, size: 18, color: AppTheme.brandLight),
-                          ),
-                          const SizedBox(width: 8),
-                          const Text(
-                            'Ders Programı',
-                            style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
-                          ),
-                          if (dayEntries.isNotEmpty) ...[
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: (isDark ? AppTheme.accent : AppTheme.brandLight).withOpacity(0.15),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                '${dayEntries.length}',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w900,
-                                  color: isDark ? AppTheme.accent : AppTheme.brandLight,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                      TextButton.icon(
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const TimetableMatrixScreen()),
-                          );
-                        },
-                        icon: const Icon(Icons.grid_on_rounded, size: 16),
-                        label: const Text('Tüm Hafta', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-
-                  if (dayEntries.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
-                      child: Column(
-                        children: [
-                          const Text('☕', style: TextStyle(fontSize: 32)),
-                          const SizedBox(height: 8),
-                          Text(
-                            scheduleProv.timetable.isEmpty
-                                ? 'Henüz ders programı oluşturulmamış.'
-                                : '${_days[_selectedWeekday - 1]} günü için ders programı boş.',
-                            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
-                          ),
-                          // Yalnızca hiçbir güne ders ataması yapılmamışsa buton ve bilgi gösterilir
-                          if (scheduleProv.timetable.isEmpty) ...[
-                            const SizedBox(height: 4),
-                            Text(
-                              'Hızlı matris ile saniyeler içinde derslerinizi atayabilirsiniz.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(fontSize: 11, color: isDark ? AppTheme.mutedDark : AppTheme.mutedLight),
-                            ),
-                            const SizedBox(height: 12),
-                            ElevatedButton.icon(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppTheme.brandLight,
-                                foregroundColor: Colors.white,
-                                visualDensity: VisualDensity.compact,
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                              ),
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (_) => const TimetableMatrixScreen()),
-                                );
-                              },
-                              icon: const Icon(Icons.add, size: 16),
-                              label: const Text('Matristen Ders Ata'),
-                            ),
-                          ],
-                        ],
-                      ),
-                    )
-                  else
-                    ..._buildScheduleListWithLiveBars(
-                      context: context,
-                      dayEntries: dayEntries,
-                      bellPeriods: scheduleProv.bellPeriods,
-                      classesProv: classesProv,
-                      plansProv: plansProv,
-                      isDark: isDark,
-                    ),
-                ],
+              const SizedBox(height: 16),
+              _buildTimetableContainer(
+                context: context,
+                dayEntries: dayEntries,
+                scheduleProv: scheduleProv,
+                classesProv: classesProv,
+                plansProv: plansProv,
+                isDark: isDark,
               ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // 2. KUTU: Notlar Kutusu
-            _buildNotesContainer(
-              context: context,
-              dayNotes: dayNotes,
-              isDark: isDark,
-              selectedDate: selectedDate,
-            ),
+            ] else ...[
+              _buildTimetableContainer(
+                context: context,
+                dayEntries: dayEntries,
+                scheduleProv: scheduleProv,
+                classesProv: classesProv,
+                plansProv: plansProv,
+                isDark: isDark,
+              ),
+              const SizedBox(height: 16),
+              _buildNotesContainer(
+                context: context,
+                dayNotes: dayNotes,
+                isDark: isDark,
+                selectedDate: selectedDate,
+              ),
+            ],
 
             const SizedBox(height: 24),
           ],
@@ -1444,12 +1349,153 @@ class HomeScreenState extends State<HomeScreen> {
   );
 }
 
+  /// 1. Container: Ders Programı Kutusu
+  Widget _buildTimetableContainer({
+    required BuildContext context,
+    required List<TimetableEntryModel> dayEntries,
+    required ScheduleProvider scheduleProv,
+    required ClassesProvider classesProv,
+    required PlansProvider plansProv,
+    required bool isDark,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppTheme.cardDark : AppTheme.cardLight,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: isDark ? AppTheme.lineDark : AppTheme.lineLight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.18 : 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Ders Programı Başlığı ve Tüm Haftayı Gör Butonu
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: AppTheme.brandLight.withOpacity(0.18),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.calendar_today_rounded, size: 18, color: AppTheme.brandLight),
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Ders Programı',
+                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+                  ),
+                  if (dayEntries.isNotEmpty) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: (isDark ? AppTheme.accent : AppTheme.brandLight).withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '${dayEntries.length}',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                          color: isDark ? AppTheme.accent : AppTheme.brandLight,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              TextButton.icon(
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const TimetableMatrixScreen()),
+                  );
+                },
+                icon: const Icon(Icons.grid_on_rounded, size: 16),
+                label: const Text('Tüm Hafta', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          if (dayEntries.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
+              child: Column(
+                children: [
+                  const Text('☕', style: TextStyle(fontSize: 32)),
+                  const SizedBox(height: 8),
+                  Text(
+                    scheduleProv.timetable.isEmpty
+                        ? 'Henüz ders programı oluşturulmamış.'
+                        : '${_days[_selectedWeekday - 1]} günü için ders programı boş.',
+                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                  ),
+                  // Yalnızca hiçbir güne ders ataması yapılmamışsa buton ve bilgi gösterilir
+                  if (scheduleProv.timetable.isEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      'Hızlı matris ile saniyeler içinde derslerinizi atayabilirsiniz.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 11, color: isDark ? AppTheme.mutedDark : AppTheme.mutedLight),
+                    ),
+                    const SizedBox(height: 12),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.brandLight,
+                        foregroundColor: Colors.white,
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      ),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const TimetableMatrixScreen()),
+                        );
+                      },
+                      icon: const Icon(Icons.add, size: 16),
+                      label: const Text('Matristen Ders Ata'),
+                    ),
+                  ],
+                ],
+              ),
+            )
+          else
+            ..._buildScheduleListWithLiveBars(
+              context: context,
+              dayEntries: dayEntries,
+              bellPeriods: scheduleProv.bellPeriods,
+              classesProv: classesProv,
+              plansProv: plansProv,
+              isDark: isDark,
+            ),
+        ],
+      ),
+    );
+  }
+
   /// Seçili haftanın gününün mevcut takvimdeki DateTime karşılığını döner
   DateTime _getDateForWeekday(int targetWeekday) {
-    final now = DateTime.now();
-    final currentWeekday = now.weekday; // 1 = Pazartesi, 7 = Pazar
-    final diff = targetWeekday - currentWeekday;
-    return DateTime(now.year, now.month, now.day).add(Duration(days: diff));
+    final mondayOfSelectedWeek = _selectedDate.subtract(Duration(days: _selectedDate.weekday - 1));
+    return DateTime(mondayOfSelectedWeek.year, mondayOfSelectedWeek.month, mondayOfSelectedWeek.day)
+        .add(Duration(days: targetWeekday - 1));
   }
 
   /// 2. Container: Notlar Kutusu

@@ -873,75 +873,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildDayCountOption({
-    required String title,
-    required String subtitle,
-    required bool isSelected,
-    required VoidCallback onTap,
-    required bool isDark,
-  }) {
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? (isDark ? AppTheme.accent : AppTheme.brandLight)
-                : (isDark ? AppTheme.bgDark : AppTheme.bgLight),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: isSelected
-                  ? (isDark ? AppTheme.accent : AppTheme.brandLight)
-                  : (isDark ? AppTheme.lineDark : AppTheme.lineLight),
-              width: isSelected ? 1.5 : 1,
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    isSelected ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
-                    size: 16,
-                    color: isSelected
-                        ? (isDark ? AppTheme.brandDark : Colors.white)
-                        : (isDark ? AppTheme.mutedDark : AppTheme.mutedLight),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
-                      color: isSelected
-                          ? (isDark ? AppTheme.brandDark : Colors.white)
-                          : (isDark ? AppTheme.inkDark : AppTheme.inkLight),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 2),
-              Text(
-                subtitle,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: isSelected
-                      ? (isDark ? AppTheme.brandDark.withOpacity(0.85) : Colors.white.withOpacity(0.85))
-                      : (isDark ? AppTheme.mutedDark : AppTheme.mutedLight),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildNotifyTypeOption({
     required String typeKey,
     required IconData icon,
@@ -1750,8 +1681,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(height: 12),
                 _buildDailyPeriodsCard(context, appProv, scheduleProv, isDark),
                 const SizedBox(height: 12),
-                _buildTimetableDaysCard(appProv, isDark),
-                const SizedBox(height: 12),
                 _buildBellPeriodsCard(context, scheduleProv, isDark),
                 const SizedBox(height: 24),
               ],
@@ -2178,72 +2107,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Text(
                     'Kayıtlı ${scheduleProv.bellPeriods.length} ders periyodu bulunuyor.',
                     style: TextStyle(fontSize: 12, color: isDark ? AppTheme.mutedDark : AppTheme.mutedLight),
-                  ),
-                ],
-              ),
-            ),
-          );
-  }
-
-  // 5. Haftalık Ders Programı Gün Sayısı Kartı
-  Widget _buildTimetableDaysCard(AppProvider appProv, bool isDark) {
-    return Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Text('📅', style: TextStyle(fontSize: 18)),
-                      const SizedBox(width: 8),
-                      const Expanded(
-                        child: Text(
-                          'Haftalık Ders Programı Gün Sayısı',
-                          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: (isDark ? AppTheme.accent : AppTheme.brandLight).withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          '${appProv.timetableDays} Günlük',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                            color: isDark ? AppTheme.accent : AppTheme.brandLight,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Ders programınızın hafta sonunu (Cumartesi - Pazar) içerip içermeyeceğini belirleyin.',
-                    style: TextStyle(fontSize: 11, color: isDark ? AppTheme.mutedDark : AppTheme.mutedLight),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      _buildDayCountOption(
-                        title: '5 Günlük',
-                        subtitle: 'Pazartesi - Cuma',
-                        isSelected: appProv.timetableDays == 5,
-                        onTap: () => appProv.setTimetableDays(5),
-                        isDark: isDark,
-                      ),
-                      const SizedBox(width: 10),
-                      _buildDayCountOption(
-                        title: '7 Günlük',
-                        subtitle: 'Tüm Hafta (Pzt - Paz)',
-                        isSelected: appProv.timetableDays == 7,
-                        onTap: () => appProv.setTimetableDays(7),
-                        isDark: isDark,
-                      ),
-                    ],
                   ),
                 ],
               ),

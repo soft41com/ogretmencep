@@ -57,7 +57,7 @@ class NotificationService {
       );
 
       await _notificationsPlugin.initialize(
-        settings: initializationSettings,
+        initializationSettings,
         onDidReceiveNotificationResponse: (NotificationResponse details) {
           // Bildirime tıklandığında yapılacak işlem
         },
@@ -288,11 +288,11 @@ class NotificationService {
 
             try {
               await _notificationsPlugin.zonedSchedule(
-                id: notificationId,
-                title: title,
-                body: body,
-                scheduledDate: scheduledDate,
-                notificationDetails: details,
+                notificationId,
+                title,
+                body,
+                scheduledDate,
+                details,
                 androidScheduleMode: preferredMode,
                 matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
               );
@@ -301,11 +301,11 @@ class NotificationService {
               debugPrint('Exact alarm error ($e), retrying with inexactAllowWhileIdle...');
               try {
                 await _notificationsPlugin.zonedSchedule(
-                  id: notificationId,
-                  title: title,
-                  body: body,
-                  scheduledDate: scheduledDate,
-                  notificationDetails: details,
+                  notificationId,
+                  title,
+                  body,
+                  scheduledDate,
+                  details,
                   androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
                   matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
                 );
@@ -352,11 +352,11 @@ class NotificationService {
 
             try {
               await _notificationsPlugin.zonedSchedule(
-                id: notificationId,
-                title: title,
-                body: body,
-                scheduledDate: scheduledDate,
-                notificationDetails: details,
+                notificationId,
+                title,
+                body,
+                scheduledDate,
+                details,
                 androidScheduleMode: preferredMode,
                 matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
               );
@@ -365,11 +365,11 @@ class NotificationService {
               debugPrint('Exact alarm error ($e), retrying with inexactAllowWhileIdle...');
               try {
                 await _notificationsPlugin.zonedSchedule(
-                  id: notificationId,
-                  title: title,
-                  body: body,
-                  scheduledDate: scheduledDate,
-                  notificationDetails: details,
+                  notificationId,
+                  title,
+                  body,
+                  scheduledDate,
+                  details,
                   androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
                   matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
                 );
@@ -427,10 +427,10 @@ class NotificationService {
         : '$cls $sbj dersinin bitmesine $minutes dakika kaldı. (Test Bildirimi)';
 
     await _notificationsPlugin.show(
-      id: 999999,
-      title: title,
-      body: body,
-      notificationDetails: details,
+      999999,
+      title,
+      body,
+      details,
     );
   }
 
@@ -453,22 +453,22 @@ class NotificationService {
 
     try {
       await _notificationsPlugin.zonedSchedule(
-        id: 999998,
-        title: 'Planlı Ders Uyarısı Testi 🔔 ($cls)',
-        body: '$cls $sbj ders uyarısı ($seconds saniye sonra). Zamanlanmış bildirim başarıyla çalışıyor!',
-        scheduledDate: scheduledDate,
-        notificationDetails: details,
+        999998,
+        'Planlı Ders Uyarısı Testi 🔔 ($cls)',
+        '$cls $sbj ders uyarısı ($seconds saniye sonra). Zamanlanmış bildirim başarıyla çalışıyor!',
+        scheduledDate,
+        details,
         androidScheduleMode: canExact
             ? AndroidScheduleMode.exactAllowWhileIdle
             : AndroidScheduleMode.inexactAllowWhileIdle,
       );
     } catch (e) {
       await _notificationsPlugin.zonedSchedule(
-        id: 999998,
-        title: 'Planlı Ders Uyarısı Testi 🔔 ($cls)',
-        body: '$cls $sbj ders uyarısı ($seconds saniye sonra). Zamanlanmış bildirim başarıyla çalışıyor!',
-        scheduledDate: scheduledDate,
-        notificationDetails: details,
+        999998,
+        'Planlı Ders Uyarısı Testi 🔔 ($cls)',
+        '$cls $sbj ders uyarısı ($seconds saniye sonra). Zamanlanmış bildirim başarıyla çalışıyor!',
+        scheduledDate,
+        details,
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       );
     }

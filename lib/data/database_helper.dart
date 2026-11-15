@@ -68,7 +68,7 @@ class DatabaseHelper {
     final existingColumns = columnsInfo.map((c) => c['name'] as String).toSet();
 
     if (!existingColumns.contains('timetable_days')) {
-      await db.execute('ALTER TABLE settings ADD COLUMN timetable_days INTEGER NOT NULL DEFAULT 5');
+      await db.execute('ALTER TABLE settings ADD COLUMN timetable_days INTEGER NOT NULL DEFAULT 7');
     }
     if (!existingColumns.contains('daily_periods_count')) {
       await db.execute('ALTER TABLE settings ADD COLUMN daily_periods_count INTEGER NOT NULL DEFAULT 8');
@@ -161,7 +161,7 @@ class DatabaseHelper {
         branch TEXT NOT NULL DEFAULT '',
         academic_year TEXT NOT NULL,
         theme_mode TEXT NOT NULL DEFAULT 'system',
-        timetable_days INTEGER NOT NULL DEFAULT 5,
+        timetable_days INTEGER NOT NULL DEFAULT 7,
         daily_periods_count INTEGER NOT NULL DEFAULT 8,
         is_onboarding_completed INTEGER NOT NULL DEFAULT 0,
         lesson_notify_enabled INTEGER NOT NULL DEFAULT 1,
@@ -349,7 +349,7 @@ class DatabaseHelper {
       'branch': '',
       'academic_year': defaultAcademicYear,
       'theme_mode': 'system',
-      'timetable_days': 5,
+      'timetable_days': 7,
       'daily_periods_count': 8,
       'is_onboarding_completed': 0,
       'created_at': now,

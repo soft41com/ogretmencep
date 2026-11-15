@@ -31,7 +31,7 @@ class AppProvider with ChangeNotifier {
   }
 
   String get activeAcademicYear => _settings?.academicYear ?? defaultAcademicYear;
-  int get timetableDays => _settings?.timetableDays ?? 5;
+  int get timetableDays => 7; // Her zaman 7 gün (Tüm hafta)
   int get dailyPeriodsCount => _settings?.dailyPeriodsCount ?? 8;
   bool get isOnboardingCompleted => _settings?.isOnboardingCompleted ?? false;
   bool get lessonNotifyEnabled => _settings?.lessonNotifyEnabled ?? true;
@@ -50,6 +50,9 @@ class AppProvider with ChangeNotifier {
 
     if (res.isNotEmpty) {
       _settings = SettingsModel.fromMap(res.first);
+      if (_settings!.timetableDays != 7) {
+        await updateSettings(timetableDays: 7);
+      }
     }
     _subjects = await DatabaseHelper.instance.getTeacherSubjects();
 
@@ -134,7 +137,7 @@ class AppProvider with ChangeNotifier {
   }
 
   Future<void> setTimetableDays(int days) async {
-    await updateSettings(timetableDays: days);
+    await updateSettings(timetableDays: 7);
   }
 
   Future<void> setTheme(String mode) async {

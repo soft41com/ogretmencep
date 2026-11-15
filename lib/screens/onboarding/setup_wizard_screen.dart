@@ -36,7 +36,7 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
 
   // Adım 3: Zil Saatleri
   int _dailyPeriodsCount = 8;
-  int _timetableDays = 5;
+  int _timetableDays = 7;
 
   // Adım 4: Ders Programı
   int _selectedWeekday = 1; // 1: Pazartesi ... 5: Cuma
@@ -672,31 +672,7 @@ class _SetupWizardScreenState extends State<SetupWizardScreen> {
             );
           }).toList(),
         ),
-        const SizedBox(height: 16),
-
-        // Haftalık Gün Sayısı
-        const Text('Haftalık Program Kaç Gün?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
         const SizedBox(height: 8),
-        Row(
-          children: [
-            ChoiceChip(
-              label: const Text('5 Gün (Haftaiçi)'),
-              selected: _timetableDays == 5,
-              onSelected: (val) {
-                if (val) setState(() => _timetableDays = 5);
-              },
-            ),
-            const SizedBox(width: 8),
-            ChoiceChip(
-              label: const Text('7 Gün (Tüm Hafta)'),
-              selected: _timetableDays == 7,
-              onSelected: (val) {
-                if (val) setState(() => _timetableDays = 7);
-              },
-            ),
-          ],
-        ),
-        const SizedBox(height: 20),
 
         // Standart Zil Saatleri Listesi
         Row(

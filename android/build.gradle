@@ -13,19 +13,10 @@ subprojects {
     project.evaluationDependsOn(':app')
 }
 
-subprojects { project ->
-    def applyCompileSdk = {
-        if (project.hasProperty('android')) {
-            project.android {
-                compileSdkVersion 36
-            }
-        }
-    }
-    if (project.state.executed) {
-        applyCompileSdk()
-    } else {
-        project.afterEvaluate {
-            applyCompileSdk()
+subprojects {
+    project.plugins.withId('com.android.library') {
+        project.android {
+            compileSdk = 35
         }
     }
 }

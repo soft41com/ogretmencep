@@ -5,7 +5,7 @@ class SettingsModel {
   final String branch;
   final String academicYear;
   final String themeMode; // light, dark, system
-  final int timetableDays; // 5 veya 7
+  final int timetableDays; // Her zaman 7 gün
   final int dailyPeriodsCount; // varsayılan 8
   final bool isOnboardingCompleted;
   final bool lessonNotifyEnabled;
@@ -22,7 +22,7 @@ class SettingsModel {
     required this.branch,
     required this.academicYear,
     required this.themeMode,
-    this.timetableDays = 5,
+    this.timetableDays = 7,
     this.dailyPeriodsCount = 8,
     this.isOnboardingCompleted = false,
     this.lessonNotifyEnabled = true,
@@ -47,7 +47,7 @@ class SettingsModel {
       branch: (map['branch'] as String?) ?? '',
       academicYear: (map['academic_year'] as String?) ?? defaultAcademicYear,
       themeMode: (map['theme_mode'] as String?) ?? 'system',
-      timetableDays: (map['timetable_days'] as int?) ?? 5,
+      timetableDays: (map['timetable_days'] as int?) ?? 7,
       dailyPeriodsCount: (map['daily_periods_count'] as int?) ?? 8,
       isOnboardingCompleted: (map['is_onboarding_completed'] as int? ?? 0) == 1,
       lessonNotifyEnabled: (map['lesson_notify_enabled'] as int? ?? 1) == 1,
