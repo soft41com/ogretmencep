@@ -2446,30 +2446,71 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  // Yıl Filtreleme Butonları
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        FilterChip(
-                          selected: selectedFilterYear == null,
-                          label: Text('Tümü (${upcomingHolidays.length})'),
-                          onSelected: (_) => setModalState(() => selectedFilterYear = null),
+                  // Yıl Filtreleme Butonları (Yüksek Kontrastlı & Okunabilir)
+                  Builder(
+                    builder: (context) {
+                      Widget buildFilterChip({
+                        required String label,
+                        required bool isSelected,
+                        required VoidCallback onTap,
+                      }) {
+                        final activeBg = isDark ? AppTheme.accent : AppTheme.brandLight;
+                        final activeFg = isDark ? AppTheme.brandDark : Colors.white;
+                        final inactiveBg = isDark ? AppTheme.cardDark : const Color(0xFFF0F4F2);
+                        final inactiveFg = isDark ? AppTheme.inkDark : AppTheme.inkLight;
+
+                        return FilterChip(
+                          selected: isSelected,
+                          showCheckmark: isSelected,
+                          checkmarkColor: activeFg,
+                          selectedColor: activeBg,
+                          backgroundColor: inactiveBg,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            side: BorderSide(
+                              color: isSelected
+                                  ? (isDark ? AppTheme.accent : AppTheme.brandLight)
+                                  : (isDark ? AppTheme.lineDark : AppTheme.lineLight),
+                              width: 1.2,
+                            ),
+                          ),
+                          label: Text(
+                            label,
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                              color: isSelected ? activeFg : inactiveFg,
+                            ),
+                          ),
+                          onSelected: (_) => onTap(),
+                        );
+                      }
+
+                      return SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            buildFilterChip(
+                              label: 'Tümü (${upcomingHolidays.length})',
+                              isSelected: selectedFilterYear == null,
+                              onTap: () => setModalState(() => selectedFilterYear = null),
+                            ),
+                            const SizedBox(width: 8),
+                            buildFilterChip(
+                              label: '$currentYear ($currentYearCount)',
+                              isSelected: selectedFilterYear == currentYear,
+                              onTap: () => setModalState(() => selectedFilterYear = currentYear),
+                            ),
+                            const SizedBox(width: 8),
+                            buildFilterChip(
+                              label: '$nextYear ($nextYearCount)',
+                              isSelected: selectedFilterYear == nextYear,
+                              onTap: () => setModalState(() => selectedFilterYear = nextYear),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 6),
-                        FilterChip(
-                          selected: selectedFilterYear == currentYear,
-                          label: Text('$currentYear ($currentYearCount)'),
-                          onSelected: (_) => setModalState(() => selectedFilterYear = currentYear),
-                        ),
-                        const SizedBox(width: 6),
-                        FilterChip(
-                          selected: selectedFilterYear == nextYear,
-                          label: Text('$nextYear ($nextYearCount)'),
-                          onSelected: (_) => setModalState(() => selectedFilterYear = nextYear),
-                        ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
                   const Divider(height: 16),
                   if (displayHolidays.isEmpty)
