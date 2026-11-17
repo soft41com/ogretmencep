@@ -93,6 +93,7 @@ class _HomeShellState extends State<HomeShell> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final indicatorColor = isDark ? AppTheme.accent : AppTheme.brandLight;
 
     return WillPopScope(
       onWillPop: _handleWillPop,
@@ -101,46 +102,107 @@ class _HomeShellState extends State<HomeShell> {
           index: _currentIndex,
           children: _screens,
         ),
-        bottomNavigationBar: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: _onTabSelected,
-          items: [
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.groups_outlined),
-              activeIcon: Icon(Icons.groups_rounded),
-              label: 'Sınıflar',
-            ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.fact_check_outlined),
-              activeIcon: Icon(Icons.fact_check_rounded),
-              label: 'Yoklama',
-            ),
-            BottomNavigationBarItem(
-              icon: Container(
-                padding: const EdgeInsets.all(4),
-                child: const Icon(Icons.calendar_today_rounded, size: 28),
+        bottomNavigationBar: Container(
+          decoration: BoxDecoration(
+            color: isDark ? AppTheme.cardDark : AppTheme.cardLight,
+            border: Border(
+              top: BorderSide(
+                color: isDark ? AppTheme.lineDark.withOpacity(0.5) : AppTheme.lineLight.withOpacity(0.8),
+                width: 1,
               ),
-              activeIcon: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: (isDark ? AppTheme.accent : AppTheme.brandLight).withOpacity(0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.calendar_month_rounded, size: 30),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(isDark ? 0.35 : 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, -3),
               ),
-              label: 'Bugün',
+            ],
+          ),
+          child: SafeArea(
+            top: false,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final totalWidth = constraints.maxWidth;
+                final itemWidth = totalWidth / 5;
+                const indicatorWidth = 44.0;
+
+                return Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    BottomNavigationBar(
+                      elevation: 0,
+                      backgroundColor: Colors.transparent,
+                      currentIndex: _currentIndex,
+                      onTap: _onTabSelected,
+                      items: [
+                        const BottomNavigationBarItem(
+                          icon: Icon(Icons.groups_outlined),
+                          activeIcon: Icon(Icons.groups_rounded),
+                          label: 'Sınıflar',
+                        ),
+                        const BottomNavigationBarItem(
+                          icon: Icon(Icons.fact_check_outlined),
+                          activeIcon: Icon(Icons.fact_check_rounded),
+                          label: 'Yoklama',
+                        ),
+                        BottomNavigationBarItem(
+                          icon: Container(
+                            padding: const EdgeInsets.all(4),
+                            child: const Icon(Icons.calendar_today_rounded, size: 28),
+                          ),
+                          activeIcon: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: indicatorColor.withOpacity(0.15),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.calendar_month_rounded, size: 30),
+                          ),
+                          label: 'Bugün',
+                        ),
+                        const BottomNavigationBarItem(
+                          icon: Icon(Icons.bar_chart_outlined),
+                          activeIcon: Icon(Icons.bar_chart_rounded),
+                          label: 'Sınavlar',
+                        ),
+                        const BottomNavigationBarItem(
+                          icon: Icon(Icons.settings_outlined),
+                          activeIcon: Icon(Icons.settings_rounded),
+                          label: 'Ayarlar',
+                        ),
+                      ],
+                    ),
+
+                    // Aktif menü seçeneğinin üstündeki kayan animasyonlu çizgi
+                    AnimatedPositioned(
+                      duration: const Duration(milliseconds: 280),
+                      curve: Curves.fastOutSlowIn,
+                      top: 0,
+                      left: (_currentIndex * itemWidth) + (itemWidth - indicatorWidth) / 2,
+                      child: Container(
+                        width: indicatorWidth,
+                        height: 3.5,
+                        decoration: BoxDecoration(
+                          color: indicatorColor,
+                          borderRadius: const BorderRadius.vertical(
+                            bottom: Radius.circular(3),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: indicatorColor.withOpacity(0.4),
+                              blurRadius: 6,
+                              offset: const Offset(0, 1.5),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.bar_chart_outlined),
-              activeIcon: Icon(Icons.bar_chart_rounded),
-              label: 'Sınavlar',
-            ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.settings_outlined),
-              activeIcon: Icon(Icons.settings_rounded),
-              label: 'Ayarlar',
-            ),
-          ],
+          ),
         ),
       ),
     );
