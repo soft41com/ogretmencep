@@ -17,14 +17,22 @@ class HolidayService {
     final targetYear = year ?? DateTime.now().year;
     final urlsToTry = <String>[];
 
+    // 1. Özel URL belirtilmişse öncelikle onu dene
     if (customUrl != null && customUrl.trim().isNotEmpty) {
       urlsToTry.add(customUrl.trim());
     }
-    // Kullanıcının belirttiği 2016tatil.json adresi
-    urlsToTry.add(defaultUrl2016);
-    // Yıla göre dinamik adres (örneğin 2026tatil.json)
-    if (!urlsToTry.contains(getYearUrl(targetYear))) {
-      urlsToTry.add(getYearUrl(targetYear));
+
+    // 2. Yıla özel adres: https://dersprogram.okulsinav.com/json/{year}tatil.json (örn. 2026tatil.json veya 2027tatil.json)
+    final yearUrl = getYearUrl(targetYear);
+    if (!urlsToTry.contains(yearUrl)) {
+      urlsToTry.add(yearUrl);
+    }
+
+    // 3. Kullanıcının belirttiği 2016tatil.json adresi (2026 için yedek bağlantı)
+    if (targetYear == 2026 || targetYear == 2016) {
+      if (!urlsToTry.contains(defaultUrl2016)) {
+        urlsToTry.add(defaultUrl2016);
+      }
     }
 
     String? responseBody;
@@ -63,13 +71,15 @@ class HolidayService {
     }
 
     // Eğer sunucuya erişilemediyse veya henüz sunucuya dosya yüklenmediyse
-    // kullanıcıyı mağdur etmemek için yerleşik 2026 verilerini döner.
-    debugPrint('Sunucudan veri alınamadı ($lastError), yerleşik 2026 tatil listesi kullanılıyor.');
+    // kullanıcıyı mağdur etmemek için yerleşik tatil verilerini döner.
+    debugPrint('Sunucudan veri alınamadı ($lastError), yerleşik $targetYear tatil listesi kullanılıyor.');
     if (targetYear == 2026) {
       return getBuiltinHolidaysFor2026();
+    } else if (targetYear == 2027) {
+      return getBuiltinHolidaysFor2027();
     }
 
-    throw Exception(lastError ?? 'Tatil verileri indirilemedi.');
+    throw Exception(lastError ?? '$targetYear yılı için tatil verileri indirilemedi.');
   }
 
   /// JSON metnini ayrıştırır ve çoklu günleri (ara tatiller vb.) tekil günlere genişletir
@@ -165,5 +175,33 @@ class HolidayService {
     ]
     ''';
     return parseHolidaysJson(rawJson, defaultYear: 2026);
+  }
+
+  /// Çevrimdışı veya sunucu henüz kurulmadığında devreye giren 2027 Resmi & MEB Tatilleri
+  List<HolidayModel> getBuiltinHolidaysFor2027() {
+    const rawJson = '''
+    [
+      {"date": "2027-01-01", "name": "Yılbaşı", "type": "official", "is_half_day": false},
+      {"date": "2027-01-18", "end_date": "2027-01-29", "name": "Yarıyıl Tatili (15 Tatil)", "type": "break", "is_half_day": false},
+      {"date": "2027-03-09", "name": "Ramazan Bayramı Arifesi", "type": "religious", "is_half_day": true},
+      {"date": "2027-03-10", "name": "Ramazan Bayramı 1. Gün", "type": "religious", "is_half_day": false},
+      {"date": "2027-03-11", "name": "Ramazan Bayramı 2. Gün", "type": "religious", "is_half_day": false},
+      {"date": "2027-03-12", "name": "Ramazan Bayramı 3. Gün", "type": "religious", "is_half_day": false},
+      {"date": "2027-04-12", "end_date": "2027-04-16", "name": "2. Dönem Ara Tatili", "type": "break", "is_half_day": false},
+      {"date": "2027-04-23", "name": "Ulusal Egemenlik ve Çocuk Bayramı", "type": "official", "is_half_day": false},
+      {"date": "2027-05-01", "name": "Emek ve Dayanışma Günü", "type": "official", "is_half_day": false},
+      {"date": "2027-05-16", "name": "Kurban Bayramı Arifesi", "type": "religious", "is_half_day": true},
+      {"date": "2027-05-17", "name": "Kurban Bayramı 1. Gün", "type": "religious", "is_half_day": false},
+      {"date": "2027-05-18", "name": "Kurban Bayramı 2. Gün", "type": "religious", "is_half_day": false},
+      {"date": "2027-05-19", "name": "Atatürk'ü Anma, Gençlik ve Spor Bayramı", "type": "official", "is_half_day": false},
+      {"date": "2027-05-20", "name": "Kurban Bayramı 4. Gün", "type": "religious", "is_half_day": false},
+      {"date": "2027-07-15", "name": "Demokrasi ve Milli Birlik Günü", "type": "official", "is_half_day": false},
+      {"date": "2027-08-30", "name": "Zafer Bayramı", "type": "official", "is_half_day": false},
+      {"date": "2027-10-28", "name": "Cumhuriyet Bayramı Arifesi", "type": "official", "is_half_day": true},
+      {"date": "2027-10-29", "name": "Cumhuriyet Bayramı", "type": "official", "is_half_day": false},
+      {"date": "2027-11-15", "end_date": "2027-11-19", "name": "1. Dönem Ara Tatili", "type": "break", "is_half_day": false}
+    ]
+    ''';
+    return parseHolidaysJson(rawJson, defaultYear: 2027);
   }
 }

@@ -51,6 +51,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _isTestingNotification = false;
   bool _isTestingScheduledNotification = false;
   bool _canScheduleExact = true;
+  int? _loadingHolidayYear;
+
+  Future<void> _loadHolidaysForYear(
+    BuildContext context,
+    AppProvider appProv,
+    ScheduleProvider scheduleProv,
+    int year,
+  ) async {
+    setState(() => _loadingHolidayYear = year);
+    try {
+      final count = await appProv.fetchAndSaveHolidays(year: year);
+      await scheduleProv.rescheduleNotifications();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: AppTheme.posLight,
+            duration: const Duration(seconds: 3),
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text('$year yılına ait $count tatil günü başarıyla yüklendi!'),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: AppTheme.negLight,
+            content: Text('$year yılı tatil günleri yüklenirken hata oluştu: $e'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _loadingHolidayYear = null);
+      }
+    }
+  }
 
   String _getCurrentAcademicYear(AppProvider appProv) {
     final year = _yearCtrl.text.trim();
@@ -2124,8 +2168,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     bool isDark,
   ) {
     final currentYear = DateTime.now().year;
+    final nextYear = currentYear + 1;
     final holidays = appProv.holidays;
-    final yearHolidays = holidays.where((h) => h.date.startsWith('$currentYear-')).toList();
+    final currentYearHolidays = holidays.where((h) => h.date.startsWith('$currentYear-')).toList();
+    final nextYearHolidays = holidays.where((h) => h.date.startsWith('$nextYear-')).toList();
 
     return Card(
       elevation: 2,
@@ -2176,16 +2222,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 12),
 
-            // Durum Rozeti
+            // Durum Rozeti (Mevcut Yıl ve Gelecek Yıl Durumu)
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                color: yearHolidays.isNotEmpty
+                color: (currentYearHolidays.isNotEmpty || nextYearHolidays.isNotEmpty)
                     ? (isDark ? const Color(0xFF1B382B) : const Color(0xFFE8F5E9))
                     : (isDark ? const Color(0xFF332A15) : const Color(0xFFFFF8E1)),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: yearHolidays.isNotEmpty
+                  color: (currentYearHolidays.isNotEmpty || nextYearHolidays.isNotEmpty)
                       ? (isDark ? const Color(0xFF4CAF50).withOpacity(0.4) : const Color(0xFFA5D6A7))
                       : (isDark ? Colors.amber.shade700 : Colors.amber.shade300),
                 ),
@@ -2193,23 +2239,45 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: Row(
                 children: [
                   Icon(
-                    yearHolidays.isNotEmpty ? Icons.check_circle_rounded : Icons.info_outline_rounded,
-                    size: 16,
-                    color: yearHolidays.isNotEmpty ? AppTheme.posLight : Colors.amber.shade800,
+                    (currentYearHolidays.isNotEmpty || nextYearHolidays.isNotEmpty)
+                        ? Icons.check_circle_rounded
+                        : Icons.info_outline_rounded,
+                    size: 18,
+                    color: (currentYearHolidays.isNotEmpty || nextYearHolidays.isNotEmpty)
+                        ? AppTheme.posLight
+                        : Colors.amber.shade800,
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 10),
                   Expanded(
-                    child: Text(
-                      yearHolidays.isNotEmpty
-                          ? '$currentYear yılına ait ${yearHolidays.length} tatil günü yüklü ve aktif.'
-                          : '$currentYear yılı için henüz tatil günleri yüklenmedi.',
-                      style: TextStyle(
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w700,
-                        color: yearHolidays.isNotEmpty
-                            ? (isDark ? AppTheme.posLight : const Color(0xFF1B5E20))
-                            : (isDark ? Colors.amber.shade300 : Colors.amber.shade900),
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          currentYearHolidays.isNotEmpty
+                              ? '$currentYear Yılı: ${currentYearHolidays.length} tatil günü yüklü ve aktif'
+                              : '$currentYear Yılı: Henüz tatil günleri yüklenmedi',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: currentYearHolidays.isNotEmpty
+                                ? (isDark ? AppTheme.posLight : const Color(0xFF1B5E20))
+                                : (isDark ? Colors.amber.shade300 : Colors.amber.shade900),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          nextYearHolidays.isNotEmpty
+                              ? '$nextYear Yılı (Gelecek Yıl): ${nextYearHolidays.length} tatil günü yüklü'
+                              : '$nextYear Yılı (Gelecek Yıl): Henüz tatil günleri yüklenmedi',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                            color: nextYearHolidays.isNotEmpty
+                                ? (isDark ? AppTheme.posLight : const Color(0xFF1B5E20))
+                                : (isDark ? AppTheme.mutedDark : AppTheme.mutedLight),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -2217,7 +2285,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 14),
 
-            // Ana Yükle Butonu
+            // 1. Mevcut Yıl Yükle Butonu
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
                 backgroundColor: isDark ? AppTheme.accent : AppTheme.brandLight,
@@ -2227,39 +2295,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               onPressed: appProv.isLoadingHolidays
                   ? null
-                  : () async {
-                      try {
-                        final count = await appProv.fetchAndSaveHolidays(year: currentYear);
-                        await scheduleProv.rescheduleNotifications();
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              backgroundColor: AppTheme.posLight,
-                              duration: const Duration(seconds: 3),
-                              content: Row(
-                                children: [
-                                  const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Text('$currentYear yılına ait $count tatil günü başarıyla yüklendi!'),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        }
-                      } catch (e) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              backgroundColor: AppTheme.negLight,
-                              content: Text('Tatil günleri yüklenirken hata oluştu: $e'),
-                            ),
-                          );
-                        }
-                      }
-                    },
-              icon: appProv.isLoadingHolidays
+                  : () => _loadHolidaysForYear(context, appProv, scheduleProv, currentYear),
+              icon: (_loadingHolidayYear == currentYear)
                   ? const SizedBox(
                       width: 16,
                       height: 16,
@@ -2267,15 +2304,48 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     )
                   : const Icon(Icons.cloud_download_rounded, size: 18),
               label: Text(
-                appProv.isLoadingHolidays
-                    ? 'Tatil Günleri İndiriliyor...'
+                (_loadingHolidayYear == currentYear)
+                    ? '$currentYear Tatil Günleri İndiriliyor...'
                     : '$currentYear Yılı Tatil Günlerini Yükle',
                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5),
               ),
             ),
+            const SizedBox(height: 8),
 
-            if (yearHolidays.isNotEmpty) ...[
-              const SizedBox(height: 8),
+            // 2. Gelecek Yıl Yükle Butonu
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(
+                  color: isDark ? AppTheme.accent : AppTheme.brandLight,
+                  width: 1.5,
+                ),
+                foregroundColor: isDark ? AppTheme.accent : AppTheme.brandLight,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: appProv.isLoadingHolidays
+                  ? null
+                  : () => _loadHolidaysForYear(context, appProv, scheduleProv, nextYear),
+              icon: (_loadingHolidayYear == nextYear)
+                  ? SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: isDark ? AppTheme.accent : AppTheme.brandLight,
+                      ),
+                    )
+                  : const Icon(Icons.update_rounded, size: 18),
+              label: Text(
+                (_loadingHolidayYear == nextYear)
+                    ? '$nextYear Tatil Günleri İndiriliyor...'
+                    : 'Gelecek Yıl ($nextYear) Tatil Günlerini Yükle',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5),
+              ),
+            ),
+
+            if (holidays.isNotEmpty) ...[
+              const SizedBox(height: 10),
               Row(
                 children: [
                   Expanded(
@@ -2286,7 +2356,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       onPressed: () => _showHolidaysListSheet(context, appProv, isDark),
                       icon: const Icon(Icons.list_alt_rounded, size: 16),
-                      label: const Text('Tatilleri İncele', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      label: Text(
+                        'Tatilleri İncele (${holidays.length})',
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -2311,6 +2384,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showHolidaysListSheet(BuildContext context, AppProvider appProv, bool isDark) {
+    int? selectedFilterYear;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -2319,6 +2394,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return StatefulBuilder(
           builder: (context, setModalState) {
             final holidays = appProv.holidays;
+            final currentYear = DateTime.now().year;
+            final nextYear = currentYear + 1;
+            final currentYearCount = holidays.where((h) => h.date.startsWith('$currentYear-')).length;
+            final nextYearCount = holidays.where((h) => h.date.startsWith('$nextYear-')).length;
+
+            final displayHolidays = selectedFilterYear == null
+                ? holidays
+                : holidays.where((h) => h.date.startsWith('$selectedFilterYear-')).toList();
 
             return Container(
               height: MediaQuery.of(context).size.height * 0.75,
@@ -2349,20 +2432,46 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 8),
+                  // Yıl Filtreleme Butonları
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        FilterChip(
+                          selected: selectedFilterYear == null,
+                          label: Text('Tümü (${holidays.length})'),
+                          onSelected: (_) => setModalState(() => selectedFilterYear = null),
+                        ),
+                        const SizedBox(width: 6),
+                        FilterChip(
+                          selected: selectedFilterYear == currentYear,
+                          label: Text('$currentYear ($currentYearCount)'),
+                          onSelected: (_) => setModalState(() => selectedFilterYear = currentYear),
+                        ),
+                        const SizedBox(width: 6),
+                        FilterChip(
+                          selected: selectedFilterYear == nextYear,
+                          label: Text('$nextYear ($nextYearCount)'),
+                          onSelected: (_) => setModalState(() => selectedFilterYear = nextYear),
+                        ),
+                      ],
+                    ),
+                  ),
                   const Divider(height: 16),
-                  if (holidays.isEmpty)
+                  if (displayHolidays.isEmpty)
                     const Expanded(
                       child: Center(
-                        child: Text('Henüz kayıtlı tatil günü bulunmuyor.'),
+                        child: Text('Bu filtrede kayıtlı tatil günü bulunmuyor.'),
                       ),
                     )
                   else
                     Expanded(
                       child: ListView.separated(
-                        itemCount: holidays.length,
+                        itemCount: displayHolidays.length,
                         separatorBuilder: (_, __) => const SizedBox(height: 8),
                         itemBuilder: (context, index) {
-                          final h = holidays[index];
+                          final h = displayHolidays[index];
                           DateTime? dt;
                           try {
                             dt = DateTime.parse(h.date);
