@@ -30,7 +30,8 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace "com.ogretmencep.app"
-    compileSdkVersion 35
+    compileSdkVersion 36
+    ndkVersion = "28.2.13676358"
 
     compileOptions {
         coreLibraryDesugaringEnabled true
@@ -49,7 +50,7 @@ android {
     defaultConfig {
         applicationId "com.ogretmencep.app"
         minSdkVersion 24
-        targetSdkVersion 35
+        targetSdkVersion 36
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         multiDexEnabled true
