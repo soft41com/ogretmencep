@@ -39,13 +39,22 @@ class NotesProvider with ChangeNotifier {
   }
 
   /// Seçili gün ve tarihe uyan notları filtreler
-  /// isRecurring == true ise: weekday kontrolü (örn. her Perşembe)
-  /// isRecurring == false ise: date kontrolü (YYYY-MM-DD eşleşmesi)
+  /// recurrenceType == 'weekly': weekday kontrolü (örn. her Salı)
+  /// recurrenceType == 'yearly': MM-dd kontrolü (her yıl aynı gün, örn. 17 Kasım)
+  /// recurrenceType == 'none': date kontrolü (YYYY-MM-DD tam eşleşmesi)
   List<DailyNoteModel> getNotesForDay(int weekday, DateTime targetDate) {
     final dateStr = DateFormat('yyyy-MM-dd').format(targetDate);
+    final monthDayStr = DateFormat('MM-dd').format(targetDate);
+
     return _notes.where((n) {
-      if (n.isRecurring) {
+      if (n.recurrenceType == 'weekly') {
         return n.weekday == weekday;
+      } else if (n.recurrenceType == 'yearly') {
+        if (n.date != null && n.date!.length >= 10) {
+          final noteMonthDay = n.date!.substring(5, 10);
+          return noteMonthDay == monthDayStr;
+        }
+        return false;
       } else {
         if (n.date != null && n.date!.isNotEmpty) {
           return n.date == dateStr;
@@ -62,6 +71,7 @@ class NotesProvider with ChangeNotifier {
     String? date,
     int? weekday,
     bool isRecurring = false,
+    String? recurrenceType,
     String? reminderTime,
     bool isReminderActive = false,
     String? color,
@@ -69,12 +79,16 @@ class NotesProvider with ChangeNotifier {
     try {
       final db = await DatabaseHelper.instance.database;
       final now = DateTime.now().toIso8601String();
+      final finalRecType = recurrenceType ?? (isRecurring ? 'weekly' : 'none');
+      final isWeekly = finalRecType == 'weekly';
+
       final noteData = {
         'title': title,
         'content': content.trim(),
-        'date': isRecurring ? null : date,
+        'date': isWeekly ? null : date,
         'weekday': weekday,
-        'is_recurring': isRecurring ? 1 : 0,
+        'is_recurring': isWeekly ? 1 : 0,
+        'recurrence_type': finalRecType,
         'is_completed': 0,
         'reminder_time': isReminderActive ? reminderTime : null,
         'is_reminder_active': isReminderActive ? 1 : 0,
@@ -88,9 +102,9 @@ class NotesProvider with ChangeNotifier {
         id: id,
         title: title,
         content: content.trim(),
-        date: isRecurring ? null : date,
+        date: isWeekly ? null : date,
         weekday: weekday,
-        isRecurring: isRecurring,
+        recurrenceType: finalRecType,
         isCompleted: false,
         reminderTime: isReminderActive ? reminderTime : null,
         isReminderActive: isReminderActive,

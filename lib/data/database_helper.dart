@@ -129,6 +129,7 @@ class DatabaseHelper {
         date TEXT,
         weekday INTEGER,
         is_recurring INTEGER NOT NULL DEFAULT 0,
+        recurrence_type TEXT NOT NULL DEFAULT 'none',
         is_completed INTEGER NOT NULL DEFAULT 0,
         reminder_time TEXT,
         is_reminder_active INTEGER NOT NULL DEFAULT 0,
@@ -148,6 +149,10 @@ class DatabaseHelper {
     }
     if (!existingColumns.contains('is_reminder_active')) {
       await db.execute('ALTER TABLE daily_notes ADD COLUMN is_reminder_active INTEGER NOT NULL DEFAULT 0');
+    }
+    if (!existingColumns.contains('recurrence_type')) {
+      await db.execute("ALTER TABLE daily_notes ADD COLUMN recurrence_type TEXT NOT NULL DEFAULT 'none'");
+      await db.execute("UPDATE daily_notes SET recurrence_type = 'weekly' WHERE is_recurring = 1");
     }
   }
 

@@ -8,6 +8,7 @@ import '../providers/classes_provider.dart';
 import '../providers/notes_provider.dart';
 import '../providers/plans_provider.dart';
 import '../providers/schedule_provider.dart';
+import '../services/notification_service.dart';
 import '../theme/app_theme.dart';
 import 'attendance_screen.dart';
 import 'class_detail_screen.dart';
@@ -1771,14 +1772,34 @@ class HomeScreenState extends State<HomeScreen> {
   /// Not Öğesi Kartı (2 satırlık gösterim)
   Widget _buildNoteItem(BuildContext context, DailyNoteModel note, bool isDark) {
     final isRecurring = note.isRecurring;
+    final isYearly = note.isYearly;
     String badgeText;
     final IconData badgeIcon;
-    if (isRecurring) {
+    final Color badgeBg;
+    final Color badgeFg;
+
+    if (isYearly) {
+      if (note.date != null && note.date!.isNotEmpty) {
+        try {
+          final parsed = DateTime.parse(note.date!);
+          badgeText = 'Her Yıl ${DateFormat('d MMMM', 'tr_TR').format(parsed)} (Yıllık)';
+        } catch (_) {
+          badgeText = 'Her Yıl (Yıllık)';
+        }
+      } else {
+        badgeText = 'Yıllık Not';
+      }
+      badgeIcon = Icons.event_repeat_rounded;
+      badgeBg = isDark ? const Color(0xFF3E2723) : const Color(0xFFFBE9E7);
+      badgeFg = isDark ? const Color(0xFFFFAB91) : const Color(0xFFD84315);
+    } else if (isRecurring) {
       final dayName = (note.weekday != null && note.weekday! >= 1 && note.weekday! <= 7)
           ? _days[note.weekday! - 1]
           : _days[_selectedWeekday - 1];
       badgeText = 'Her $dayName (Haftalık)';
       badgeIcon = Icons.repeat_rounded;
+      badgeBg = isDark ? const Color(0xFF1B3B36) : const Color(0xFFE0F2F1);
+      badgeFg = isDark ? AppTheme.accent : const Color(0xFF00796B);
     } else {
       if (note.date != null && note.date!.isNotEmpty) {
         try {
@@ -1791,6 +1812,8 @@ class HomeScreenState extends State<HomeScreen> {
         badgeText = 'Tarihli Not';
       }
       badgeIcon = Icons.calendar_today_rounded;
+      badgeBg = isDark ? const Color(0xFF2E3345) : const Color(0xFFEDE7F6);
+      badgeFg = isDark ? const Color(0xFFB39DDB) : const Color(0xFF5E35B1);
     }
 
     return Container(
@@ -1813,7 +1836,7 @@ class HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Rozet (Tarih ya da Haftalık Tekrar), Hatırlatıcı ve Yapıldı Durumu
+                // Rozet (Tarih, Haftalık veya Yıllık Tekrar), Hatırlatıcı ve Yapıldı Durumu
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -1826,9 +1849,7 @@ class HomeScreenState extends State<HomeScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                             decoration: BoxDecoration(
-                              color: isRecurring
-                                  ? (isDark ? const Color(0xFF1B3B36) : const Color(0xFFE0F2F1))
-                                  : (isDark ? const Color(0xFF2E3345) : const Color(0xFFEDE7F6)),
+                              color: badgeBg,
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Row(
@@ -1837,9 +1858,7 @@ class HomeScreenState extends State<HomeScreen> {
                                 Icon(
                                   badgeIcon,
                                   size: 11,
-                                  color: isRecurring
-                                      ? (isDark ? AppTheme.accent : const Color(0xFF00796B))
-                                      : (isDark ? const Color(0xFFB39DDB) : const Color(0xFF5E35B1)),
+                                  color: badgeFg,
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
@@ -1847,9 +1866,7 @@ class HomeScreenState extends State<HomeScreen> {
                                   style: TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.w700,
-                                    color: isRecurring
-                                        ? (isDark ? AppTheme.accent : const Color(0xFF00796B))
-                                        : (isDark ? const Color(0xFFB39DDB) : const Color(0xFF5E35B1)),
+                                    color: badgeFg,
                                   ),
                                 ),
                               ],
@@ -1972,12 +1989,28 @@ class HomeScreenState extends State<HomeScreen> {
   void _showNoteDetailSheet(BuildContext context, DailyNoteModel note) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isRecurring = note.isRecurring;
+    final isYearly = note.isYearly;
     String timingText;
-    if (isRecurring) {
+    final IconData timingIcon;
+
+    if (isYearly) {
+      if (note.date != null && note.date!.isNotEmpty) {
+        try {
+          final parsed = DateTime.parse(note.date!);
+          timingText = 'Her Yıl ${DateFormat('d MMMM', 'tr_TR').format(parsed)} (Yıllık Tekrarlanan)';
+        } catch (_) {
+          timingText = 'Yıllık Tekrarlanan';
+        }
+      } else {
+        timingText = 'Yıllık Tekrarlanan';
+      }
+      timingIcon = Icons.event_repeat_rounded;
+    } else if (isRecurring) {
       final dayName = (note.weekday != null && note.weekday! >= 1 && note.weekday! <= 7)
           ? _days[note.weekday! - 1]
           : _days[_selectedWeekday - 1];
       timingText = 'Her $dayName (Haftalık Tekrarlanan)';
+      timingIcon = Icons.repeat_rounded;
     } else {
       if (note.date != null && note.date!.isNotEmpty) {
         try {
@@ -1989,6 +2022,7 @@ class HomeScreenState extends State<HomeScreen> {
       } else {
         timingText = 'Tarih Belirtilmedi';
       }
+      timingIcon = Icons.calendar_today_rounded;
     }
 
     showModalBottomSheet(
@@ -2074,7 +2108,7 @@ class HomeScreenState extends State<HomeScreen> {
                         Row(
                           children: [
                             Icon(
-                              isRecurring ? Icons.repeat_rounded : Icons.calendar_today_rounded,
+                              timingIcon,
                               size: 12,
                               color: isDark ? AppTheme.mutedDark : AppTheme.mutedLight,
                             ),
@@ -2313,10 +2347,17 @@ class HomeScreenState extends State<HomeScreen> {
     final isEditing = existingNote != null;
 
     // Başlangıç değerleri
-    bool isRecurring = existingNote?.isRecurring ?? false;
+    String recurrenceType = existingNote?.recurrenceType ??
+        ((existingNote?.isRecurring ?? false) ? 'weekly' : 'none');
     int selectedWeekday = existingNote?.weekday ?? _selectedWeekday;
     bool isReminderActive = existingNote?.isReminderActive ?? false;
-    String reminderTime = existingNote?.reminderTime ?? '09:00';
+
+    // Akıllı varsayılan saat: Yeni not ise şu anki saatten 5 dakika sonrası
+    final nowTime = DateTime.now();
+    final smartDefault = nowTime.add(const Duration(minutes: 5));
+    final defaultReminderTime =
+        '${smartDefault.hour.toString().padLeft(2, '0')}:${smartDefault.minute.toString().padLeft(2, '0')}';
+    String reminderTime = existingNote?.reminderTime ?? defaultReminderTime;
 
     DateTime selectedDate;
     if (existingNote?.date != null && existingNote!.date!.isNotEmpty) {
@@ -2392,60 +2433,53 @@ class HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(height: 14),
 
-                    // Not Zamanlama Türü (Tarih mi Haftalık Tekrar mı?)
+                    // Not Zamanlama Türü (Belirli Tarih, Haftalık Tekrarla, Yıllık Tekrarla)
                     const Text(
                       'Not Zamanlaması',
                       style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
                     ),
                     const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ChoiceChip(
-                            label: const Center(
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.calendar_today_rounded, size: 14),
-                                  SizedBox(width: 6),
-                                  Text('Belirli Tarih', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                                ],
-                              ),
-                            ),
-                            selected: !isRecurring,
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          ChoiceChip(
+                            avatar: const Icon(Icons.calendar_today_rounded, size: 14),
+                            label: const Text('Belirli Tarih', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                            selected: recurrenceType == 'none',
                             selectedColor: (isDark ? AppTheme.accent : AppTheme.brandLight).withOpacity(0.2),
                             onSelected: (val) {
-                              if (val) setModalState(() => isRecurring = false);
+                              if (val) setModalState(() => recurrenceType = 'none');
                             },
                           ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: ChoiceChip(
-                            label: const Center(
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.repeat_rounded, size: 14),
-                                  SizedBox(width: 6),
-                                  Text('Haftalık Tekrarla', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                                ],
-                              ),
-                            ),
-                            selected: isRecurring,
+                          const SizedBox(width: 8),
+                          ChoiceChip(
+                            avatar: const Icon(Icons.repeat_rounded, size: 14),
+                            label: const Text('Haftalık Tekrarla', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                            selected: recurrenceType == 'weekly',
                             selectedColor: (isDark ? AppTheme.accent : AppTheme.brandLight).withOpacity(0.2),
                             onSelected: (val) {
-                              if (val) setModalState(() => isRecurring = true);
+                              if (val) setModalState(() => recurrenceType = 'weekly');
                             },
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 8),
+                          ChoiceChip(
+                            avatar: const Icon(Icons.event_repeat_rounded, size: 14),
+                            label: const Text('Yıllık Tekrarla', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                            selected: recurrenceType == 'yearly',
+                            selectedColor: (isDark ? AppTheme.accent : AppTheme.brandLight).withOpacity(0.2),
+                            onSelected: (val) {
+                              if (val) setModalState(() => recurrenceType = 'yearly');
+                            },
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 12),
 
                     // Seçime Göre Tarih veya Gün Seçimi
-                    if (!isRecurring) ...[
-                      // Tarih Seçici Butonu
+                    if (recurrenceType == 'none') ...[
+                      // Belirli Tarih Seçici Butonu
                       InkWell(
                         borderRadius: BorderRadius.circular(12),
                         onTap: () async {
@@ -2487,7 +2521,7 @@ class HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                       ),
-                    ] else ...[
+                    ] else if (recurrenceType == 'weekly') ...[
                       // Haftalık Gün Seçimi
                       Text(
                         'Tekrarlanacak Gün: ${_days[selectedWeekday - 1]}',
@@ -2519,6 +2553,70 @@ class HomeScreenState extends State<HomeScreen> {
                               ),
                             );
                           }),
+                        ),
+                      ),
+                    ] else if (recurrenceType == 'yearly') ...[
+                      // Yıllık Tarih Seçimi
+                      InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () async {
+                          final picked = await showDatePicker(
+                            context: sheetCtx,
+                            initialDate: selectedDate,
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime(2035),
+                            locale: const Locale('tr', 'TR'),
+                          );
+                          if (picked != null) {
+                            setModalState(() {
+                              selectedDate = picked;
+                              selectedWeekday = picked.weekday;
+                            });
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF3E2723).withOpacity(0.3) : const Color(0xFFFBE9E7),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isDark ? const Color(0xFFFFAB91).withOpacity(0.4) : const Color(0xFFFFCCBC),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.event_repeat_rounded,
+                                size: 20,
+                                color: isDark ? const Color(0xFFFFAB91) : const Color(0xFFD84315),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Her Yıl ${DateFormat('d MMMM', 'tr_TR').format(selectedDate)}',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 13,
+                                        color: isDark ? const Color(0xFFFFAB91) : const Color(0xFFD84315),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Her yıl aynı gün (${DateFormat('d MMMM', 'tr_TR').format(selectedDate)}) görüntülenecektir.',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: isDark ? AppTheme.mutedDark : AppTheme.mutedLight,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const Icon(Icons.arrow_drop_down_rounded, size: 20),
+                            ],
+                          ),
                         ),
                       ),
                     ],
@@ -2686,6 +2784,87 @@ class HomeScreenState extends State<HomeScreen> {
                                 ),
                               ),
                             ),
+
+                            // Geçmiş saat uyarısı
+                            Builder(
+                              builder: (context) {
+                                bool isPast = false;
+                                if (recurrenceType == 'none') {
+                                  final currentNow = DateTime.now();
+                                  final todayStr = DateFormat('yyyy-MM-dd').format(currentNow);
+                                  final selDateStr = DateFormat('yyyy-MM-dd').format(selectedDate);
+                                  if (selDateStr == todayStr) {
+                                    final parts = reminderTime.split(':');
+                                    if (parts.length == 2) {
+                                      final h = int.tryParse(parts[0]) ?? 0;
+                                      final m = int.tryParse(parts[1]) ?? 0;
+                                      final reminderDt = DateTime(currentNow.year, currentNow.month, currentNow.day, h, m);
+                                      if (reminderDt.isBefore(currentNow)) {
+                                        isPast = true;
+                                      }
+                                    }
+                                  }
+                                }
+
+                                if (!isPast) return const SizedBox.shrink();
+                                return Container(
+                                  margin: const EdgeInsets.only(top: 8),
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red.withOpacity(0.08),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: Colors.red.withOpacity(0.3)),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.warning_amber_rounded, size: 16, color: Colors.red),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          'Belirtilen saat ($reminderTime) şu anki saatten önce olduğu için bildirim çalmayabilir. Lütfen ileri bir saat seçin.',
+                                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.red),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+
+                            // Test Bildirimi Butonu
+                            const SizedBox(height: 10),
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton.icon(
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: AppTheme.accent,
+                                  side: BorderSide(color: AppTheme.accent.withOpacity(0.5)),
+                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                ),
+                                onPressed: () async {
+                                  final content = contentCtrl.text.trim().isNotEmpty ? contentCtrl.text.trim() : 'Test Hatırlatıcı Notu';
+                                  final title = titleCtrl.text.trim().isNotEmpty ? titleCtrl.text.trim() : 'Not Testi 🔔';
+                                  await NotificationService.instance.showNoteTestNotification(
+                                    title: title,
+                                    content: content,
+                                    delaySeconds: 0,
+                                  );
+                                  if (sheetCtx.mounted) {
+                                    ScaffoldMessenger.of(sheetCtx).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Test bildirimi gönderildi. Üst bildirim çubuğunu kontrol edebilirsiniz! 🔔'),
+                                        backgroundColor: AppTheme.posLight,
+                                        duration: Duration(seconds: 3),
+                                        behavior: SnackBarBehavior.floating,
+                                      ),
+                                    );
+                                  }
+                                },
+                                icon: const Icon(Icons.notifications_active_outlined, size: 16),
+                                label: const Text('Anlık Bildirim Testi Gönder', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                              ),
+                            ),
                           ],
                         ],
                       ),
@@ -2726,9 +2905,33 @@ class HomeScreenState extends State<HomeScreen> {
                                 return;
                               }
 
+                              if (isReminderActive && recurrenceType == 'none') {
+                                final currentNow = DateTime.now();
+                                final todayStr = DateFormat('yyyy-MM-dd').format(currentNow);
+                                final selDateStr = DateFormat('yyyy-MM-dd').format(selectedDate);
+                                if (selDateStr == todayStr) {
+                                  final parts = reminderTime.split(':');
+                                  if (parts.length == 2) {
+                                    final h = int.tryParse(parts[0]) ?? 0;
+                                    final m = int.tryParse(parts[1]) ?? 0;
+                                    final reminderDt = DateTime(currentNow.year, currentNow.month, currentNow.day, h, m);
+                                    if (reminderDt.isBefore(currentNow.subtract(const Duration(minutes: 1)))) {
+                                      ScaffoldMessenger.of(sheetCtx).showSnackBar(
+                                        SnackBar(
+                                          content: Text('Belirttiğiniz saat ($reminderTime) geçmişte kaldığı için hatırlatma çalmayacaktır. Lütfen ileri bir saat seçiniz.'),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                      return;
+                                    }
+                                  }
+                                }
+                              }
+
                               final title = titleCtrl.text.trim().isEmpty ? null : titleCtrl.text.trim();
-                              final dateStr = isRecurring ? null : DateFormat('yyyy-MM-dd').format(selectedDate);
-                              final weekdayVal = isRecurring ? selectedWeekday : selectedDate.weekday;
+                              final isWeekly = recurrenceType == 'weekly';
+                              final dateStr = isWeekly ? null : DateFormat('yyyy-MM-dd').format(selectedDate);
+                              final weekdayVal = isWeekly ? selectedWeekday : selectedDate.weekday;
 
                               Navigator.pop(sheetCtx);
 
@@ -2739,7 +2942,8 @@ class HomeScreenState extends State<HomeScreen> {
                                   content: content,
                                   date: dateStr,
                                   weekday: weekdayVal,
-                                  isRecurring: isRecurring,
+                                  recurrenceType: recurrenceType,
+                                  isRecurring: isWeekly,
                                   reminderTime: isReminderActive ? reminderTime : null,
                                   isReminderActive: isReminderActive,
                                   clearReminderTime: !isReminderActive,
@@ -2763,7 +2967,8 @@ class HomeScreenState extends State<HomeScreen> {
                                   content: content,
                                   date: dateStr,
                                   weekday: weekdayVal,
-                                  isRecurring: isRecurring,
+                                  recurrenceType: recurrenceType,
+                                  isRecurring: isWeekly,
                                   reminderTime: isReminderActive ? reminderTime : null,
                                   isReminderActive: isReminderActive,
                                 );

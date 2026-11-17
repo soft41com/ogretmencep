@@ -555,7 +555,7 @@ class DailyNoteModel {
   final String content;
   final String? date; // 'YYYY-MM-DD'
   final int? weekday; // 1 = Monday, 7 = Sunday
-  final bool isRecurring; // true: haftalık tekrar, false: belirli tarih
+  final String recurrenceType; // 'none', 'weekly', 'yearly'
   final bool isCompleted; // true: yapıldı, false: bekliyor
   final String? reminderTime; // 'HH:mm' örn: '09:30'
   final bool isReminderActive; // true: bildirim hatırlatması aktif
@@ -563,29 +563,36 @@ class DailyNoteModel {
   final String createdAt;
   final String updatedAt;
 
+  bool get isRecurring => recurrenceType == 'weekly';
+  bool get isYearly => recurrenceType == 'yearly';
+
   DailyNoteModel({
     this.id,
     this.title,
     required this.content,
     this.date,
     this.weekday,
-    this.isRecurring = false,
+    bool isRecurring = false,
+    String? recurrenceType,
     this.isCompleted = false,
     this.reminderTime,
     this.isReminderActive = false,
     this.color,
     required this.createdAt,
     required this.updatedAt,
-  });
+  }) : recurrenceType = recurrenceType ?? (isRecurring ? 'weekly' : 'none');
 
   factory DailyNoteModel.fromMap(Map<String, dynamic> map) {
+    final recType = (map['recurrence_type'] as String?) ??
+        (((map['is_recurring'] as int? ?? 0) == 1) ? 'weekly' : 'none');
+
     return DailyNoteModel(
       id: map['id'] as int?,
       title: map['title'] as String?,
       content: map['content'] as String,
       date: map['date'] as String?,
       weekday: map['weekday'] as int?,
-      isRecurring: (map['is_recurring'] as int? ?? 0) == 1,
+      recurrenceType: recType,
       isCompleted: (map['is_completed'] as int? ?? 0) == 1,
       reminderTime: map['reminder_time'] as String?,
       isReminderActive: (map['is_reminder_active'] as int? ?? 0) == 1,
@@ -602,6 +609,7 @@ class DailyNoteModel {
       'date': date,
       'weekday': weekday,
       'is_recurring': isRecurring ? 1 : 0,
+      'recurrence_type': recurrenceType,
       'is_completed': isCompleted ? 1 : 0,
       'reminder_time': reminderTime,
       'is_reminder_active': isReminderActive ? 1 : 0,
@@ -622,6 +630,7 @@ class DailyNoteModel {
     String? date,
     int? weekday,
     bool? isRecurring,
+    String? recurrenceType,
     bool? isCompleted,
     String? reminderTime,
     bool? isReminderActive,
@@ -630,13 +639,16 @@ class DailyNoteModel {
     String? createdAt,
     String? updatedAt,
   }) {
+    final rec = recurrenceType ??
+        (isRecurring != null ? (isRecurring ? 'weekly' : 'none') : this.recurrenceType);
+
     return DailyNoteModel(
       id: id ?? this.id,
       title: title ?? this.title,
       content: content ?? this.content,
       date: date ?? this.date,
       weekday: weekday ?? this.weekday,
-      isRecurring: isRecurring ?? this.isRecurring,
+      recurrenceType: rec,
       isCompleted: isCompleted ?? this.isCompleted,
       reminderTime: clearReminderTime ? null : (reminderTime ?? this.reminderTime),
       isReminderActive: isReminderActive ?? this.isReminderActive,

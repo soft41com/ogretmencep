@@ -548,10 +548,10 @@ class NotificationService {
     );
   }
 
-  /// Not için belirlenen saatte bildirim planlar
-  Future<void> scheduleNoteNotification(DailyNoteModel note) async {
+  /// Not için belirlenen saatte bildirim planlar (Başarılıysa true, zaman geçmişse veya hata varsa false döner)
+  Future<bool> scheduleNoteNotification(DailyNoteModel note) async {
     if (note.id == null || !note.isReminderActive || note.reminderTime == null || note.reminderTime!.isEmpty) {
-      return;
+      return false;
     }
 
     await initialize();
@@ -565,10 +565,10 @@ class NotificationService {
     } catch (_) {}
 
     final parts = note.reminderTime!.split(':');
-    if (parts.length != 2) return;
+    if (parts.length != 2) return false;
     final hour = int.tryParse(parts[0]);
     final minute = int.tryParse(parts[1]);
-    if (hour == null || minute == null) return;
+    if (hour == null || minute == null) return false;
 
     final details = _getNoteNotificationDetails();
     final title = (note.title != null && note.title!.trim().isNotEmpty)
@@ -578,9 +578,6 @@ class NotificationService {
 
     final now = tz.TZDateTime.now(tz.local);
     final bool canExact = await canScheduleExactNotifications();
-    final scheduleMode = canExact
-        ? AndroidScheduleMode.exactAllowWhileIdle
-        : AndroidScheduleMode.inexactAllowWhileIdle;
 
     if (note.isRecurring) {
       // Haftalık tekrarlanan gün bildirimi
@@ -598,30 +595,69 @@ class NotificationService {
         scheduledDate = scheduledDate.add(const Duration(days: 1));
       }
 
+      return await _safeZonedSchedule(
+        notificationId: notificationId,
+        title: title,
+        body: body,
+        scheduledDate: scheduledDate,
+        details: details,
+        canExact: canExact,
+        matchComponents: DateTimeComponents.dayOfWeekAndTime,
+      );
+    } else if (note.isYearly) {
+      // Yıllık tekrarlanan gün bildirimi (Her yıl aynı gün ve ayda)
+      if (note.date == null || note.date!.isEmpty) return false;
       try {
-        await _notificationsPlugin.zonedSchedule(
-          notificationId,
-          title,
-          body,
-          scheduledDate,
-          details,
-          androidScheduleMode: scheduleMode,
-          matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+        final dateParts = note.date!.split('-');
+        if (dateParts.length != 3) return false;
+        final month = int.parse(dateParts[1]);
+        final day = int.parse(dateParts[2]);
+
+        var scheduledDate = tz.TZDateTime(
+          tz.local,
+          now.year,
+          month,
+          day,
+          hour,
+          minute,
+        );
+
+        // Bu yılki zaman geçmişse sonraki yıla planla
+        if (scheduledDate.isBefore(now)) {
+          scheduledDate = tz.TZDateTime(
+            tz.local,
+            now.year + 1,
+            month,
+            day,
+            hour,
+            minute,
+          );
+        }
+
+        return await _safeZonedSchedule(
+          notificationId: notificationId,
+          title: title,
+          body: body,
+          scheduledDate: scheduledDate,
+          details: details,
+          canExact: canExact,
+          matchComponents: DateTimeComponents.dateAndTime,
         );
       } catch (e) {
-        debugPrint('Haftalık not bildirimi planlama hatası: $e');
+        debugPrint('Yıllık not bildirimi planlama hatası: $e');
+        return false;
       }
     } else {
       // Belirli bir tarih için tek seferlik bildirim
-      if (note.date == null || note.date!.isEmpty) return;
+      if (note.date == null || note.date!.isEmpty) return false;
       try {
         final dateParts = note.date!.split('-');
-        if (dateParts.length != 3) return;
+        if (dateParts.length != 3) return false;
         final year = int.parse(dateParts[0]);
         final month = int.parse(dateParts[1]);
         final day = int.parse(dateParts[2]);
 
-        final scheduledDate = tz.TZDateTime(
+        var scheduledDate = tz.TZDateTime(
           tz.local,
           year,
           month,
@@ -630,22 +666,126 @@ class NotificationService {
           minute,
         );
 
-        // Geçmişte kalmış bir an ise planlama
+        // Eğer belirlenen dakika şu anki dakikaya denk geliyorsa veya az önce geçmişse (1 dakika içinde),
+        // kullanıcının hemen test edebilmesi için 3 saniye sonraya kur
         if (scheduledDate.isBefore(now)) {
-          return;
+          final diff = now.difference(scheduledDate);
+          if (diff.inMinutes < 1) {
+            scheduledDate = now.add(const Duration(seconds: 3));
+          } else {
+            debugPrint('Not bildirimi planlanamadı: Belirlenen tarih/saat geçmişte ($scheduledDate < $now)');
+            return false;
+          }
         }
 
+        return await _safeZonedSchedule(
+          notificationId: notificationId,
+          title: title,
+          body: body,
+          scheduledDate: scheduledDate,
+          details: details,
+          canExact: canExact,
+        );
+      } catch (e) {
+        debugPrint('Tarihli not bildirimi planlama hatası: $e');
+        return false;
+      }
+    }
+  }
+
+  /// Exact/AlarmClock/Inexact katmanlarıyla güvenli planlama yapar
+  Future<bool> _safeZonedSchedule({
+    required int notificationId,
+    required String title,
+    required String body,
+    required tz.TZDateTime scheduledDate,
+    required NotificationDetails details,
+    required bool canExact,
+    DateTimeComponents? matchComponents,
+  }) async {
+    try {
+      // 1. Tercih: alarmClock (En yüksek öncelik, Doze modundan etkilenmez, tam dakikasında çalar)
+      await _notificationsPlugin.zonedSchedule(
+        notificationId,
+        title,
+        body,
+        scheduledDate,
+        details,
+        androidScheduleMode: AndroidScheduleMode.alarmClock,
+        matchDateTimeComponents: matchComponents,
+      );
+      debugPrint('Not bildirimi alarmClock ile başarıyla planlandı: $scheduledDate (ID: $notificationId)');
+      return true;
+    } catch (e1) {
+      debugPrint('alarmClock başarısız oldu ($e1), exactAllowWhileIdle deneniyor...');
+      try {
+        // 2. Tercih: exactAllowWhileIdle
         await _notificationsPlugin.zonedSchedule(
           notificationId,
           title,
           body,
           scheduledDate,
           details,
-          androidScheduleMode: scheduleMode,
+          androidScheduleMode: canExact
+              ? AndroidScheduleMode.exactAllowWhileIdle
+              : AndroidScheduleMode.inexactAllowWhileIdle,
+          matchDateTimeComponents: matchComponents,
         );
-      } catch (e) {
-        debugPrint('Tarihli not bildirimi planlama hatası: $e');
+        debugPrint('Not bildirimi exactAllowWhileIdle ile planlandı: $scheduledDate');
+        return true;
+      } catch (e2) {
+        debugPrint('exactAllowWhileIdle başarısız oldu ($e2), inexact deneniyor...');
+        try {
+          // 3. Tercih: inexactAllowWhileIdle
+          await _notificationsPlugin.zonedSchedule(
+            notificationId,
+            title,
+            body,
+            scheduledDate,
+            details,
+            androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+            matchDateTimeComponents: matchComponents,
+          );
+          debugPrint('Not bildirimi inexactAllowWhileIdle ile planlandı: $scheduledDate');
+          return true;
+        } catch (e3) {
+          debugPrint('Tüm planlama denemeleri başarısız: $e3');
+          return false;
+        }
       }
+    }
+  }
+
+  /// Not bildirimi için anlık veya gecikmeli test bildirimi gönderir
+  Future<void> showNoteTestNotification({
+    required String title,
+    required String content,
+    int delaySeconds = 0,
+  }) async {
+    await initialize();
+    await requestPermissions();
+
+    final details = _getNoteNotificationDetails();
+    final notifTitle = title.trim().isNotEmpty ? 'Not Hatırlatıcı: ${title.trim()}' : 'Not Hatırlatıcı 📌';
+    final notifBody = content.trim().isNotEmpty ? content.trim() : 'Bu bir not hatırlatma test bildirimdir.';
+
+    if (delaySeconds <= 0) {
+      await _notificationsPlugin.show(
+        399999,
+        notifTitle,
+        notifBody,
+        details,
+      );
+    } else {
+      final scheduledDate = tz.TZDateTime.now(tz.local).add(Duration(seconds: delaySeconds));
+      await _safeZonedSchedule(
+        notificationId: 399999,
+        title: notifTitle,
+        body: notifBody,
+        scheduledDate: scheduledDate,
+        details: details,
+        canExact: true,
+      );
     }
   }
 
