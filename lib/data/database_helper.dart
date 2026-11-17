@@ -129,11 +129,18 @@ class DatabaseHelper {
         date TEXT,
         weekday INTEGER,
         is_recurring INTEGER NOT NULL DEFAULT 0,
+        is_completed INTEGER NOT NULL DEFAULT 0,
         color TEXT,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
       )
     ''');
+
+    final columnsInfo = await db.rawQuery('PRAGMA table_info(daily_notes)');
+    final existingColumns = columnsInfo.map((c) => c['name'] as String).toSet();
+    if (!existingColumns.contains('is_completed')) {
+      await db.execute('ALTER TABLE daily_notes ADD COLUMN is_completed INTEGER NOT NULL DEFAULT 0');
+    }
   }
 
   Future<void> _ensureHolidaysTable(Database db) async {

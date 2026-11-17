@@ -122,6 +122,11 @@ class NotesProvider with ChangeNotifier {
     }
   }
 
+  /// Notun yapıldı durumunu değiştirir (Yapıldı / Yapılmadı)
+  Future<bool> toggleNoteCompleted(DailyNoteModel note) async {
+    return await updateNote(note.copyWith(isCompleted: !note.isCompleted));
+  }
+
   /// Notu siler
   Future<bool> deleteNote(int id) async {
     try {

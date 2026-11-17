@@ -556,6 +556,7 @@ class DailyNoteModel {
   final String? date; // 'YYYY-MM-DD'
   final int? weekday; // 1 = Monday, 7 = Sunday
   final bool isRecurring; // true: haftalık tekrar, false: belirli tarih
+  final bool isCompleted; // true: yapıldı, false: bekliyor
   final String? color;
   final String createdAt;
   final String updatedAt;
@@ -567,6 +568,7 @@ class DailyNoteModel {
     this.date,
     this.weekday,
     this.isRecurring = false,
+    this.isCompleted = false,
     this.color,
     required this.createdAt,
     required this.updatedAt,
@@ -580,6 +582,7 @@ class DailyNoteModel {
       date: map['date'] as String?,
       weekday: map['weekday'] as int?,
       isRecurring: (map['is_recurring'] as int? ?? 0) == 1,
+      isCompleted: (map['is_completed'] as int? ?? 0) == 1,
       color: map['color'] as String?,
       createdAt: (map['created_at'] as String?) ?? DateTime.now().toIso8601String(),
       updatedAt: (map['updated_at'] as String?) ?? DateTime.now().toIso8601String(),
@@ -593,6 +596,7 @@ class DailyNoteModel {
       'date': date,
       'weekday': weekday,
       'is_recurring': isRecurring ? 1 : 0,
+      'is_completed': isCompleted ? 1 : 0,
       'color': color,
       'created_at': createdAt,
       'updated_at': updatedAt,
@@ -610,6 +614,7 @@ class DailyNoteModel {
     String? date,
     int? weekday,
     bool? isRecurring,
+    bool? isCompleted,
     String? color,
     String? createdAt,
     String? updatedAt,
@@ -621,6 +626,7 @@ class DailyNoteModel {
       date: date ?? this.date,
       weekday: weekday ?? this.weekday,
       isRecurring: isRecurring ?? this.isRecurring,
+      isCompleted: isCompleted ?? this.isCompleted,
       color: color ?? this.color,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

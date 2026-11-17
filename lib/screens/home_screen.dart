@@ -1813,7 +1813,7 @@ class HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Rozet (Tarih ya da Haftalık Tekrar)
+                // Rozet (Tarih ya da Haftalık Tekrar) ve Yapıldı Durumu
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -1849,10 +1849,44 @@ class HomeScreenState extends State<HomeScreen> {
                         ],
                       ),
                     ),
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      size: 18,
-                      color: (isDark ? AppTheme.mutedDark : AppTheme.mutedLight).withOpacity(0.6),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (note.isCompleted) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
+                            margin: const EdgeInsets.only(right: 6),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF10B981).withOpacity(0.18),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: const Color(0xFF10B981).withOpacity(0.4),
+                                width: 0.8,
+                              ),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.check_circle_rounded, size: 11, color: Color(0xFF10B981)),
+                                SizedBox(width: 3),
+                                Text(
+                                  'Yapıldı',
+                                  style: TextStyle(
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w800,
+                                    color: Color(0xFF10B981),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          size: 18,
+                          color: (isDark ? AppTheme.mutedDark : AppTheme.mutedLight).withOpacity(0.6),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -1862,9 +1896,13 @@ class HomeScreenState extends State<HomeScreen> {
                 if (note.title != null && note.title!.trim().isNotEmpty) ...[
                   Text(
                     note.title!.trim(),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w800,
+                      decoration: note.isCompleted ? TextDecoration.lineThrough : null,
+                      color: note.isCompleted
+                          ? (isDark ? AppTheme.mutedDark : AppTheme.mutedLight)
+                          : null,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -1878,7 +1916,10 @@ class HomeScreenState extends State<HomeScreen> {
                   style: TextStyle(
                     fontSize: 12,
                     height: 1.35,
-                    color: isDark ? AppTheme.inkDark.withOpacity(0.85) : AppTheme.inkLight.withOpacity(0.85),
+                    decoration: note.isCompleted ? TextDecoration.lineThrough : null,
+                    color: note.isCompleted
+                        ? (isDark ? AppTheme.mutedDark.withOpacity(0.7) : AppTheme.mutedLight.withOpacity(0.7))
+                        : (isDark ? AppTheme.inkDark.withOpacity(0.85) : AppTheme.inkLight.withOpacity(0.85)),
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -1956,9 +1997,42 @@ class HomeScreenState extends State<HomeScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Not Detayı',
-                          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+                        Row(
+                          children: [
+                            const Text(
+                              'Not Detayı',
+                              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+                            ),
+                            if (note.isCompleted) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF10B981).withOpacity(0.18),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: const Color(0xFF10B981).withOpacity(0.4),
+                                    width: 0.8,
+                                  ),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.check_circle_rounded, size: 12, color: Color(0xFF10B981)),
+                                    SizedBox(width: 3),
+                                    Text(
+                                      'Yapıldı',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w800,
+                                        color: Color(0xFF10B981),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                         const SizedBox(height: 2),
                         Row(
@@ -2029,9 +2103,76 @@ class HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 24),
 
-              // Aksiyon Butonları (Sil ve Düzenle)
+              // Aksiyon Butonları: Sıralama -> 1. Yapıldı, 2. Düzenle, 3. Sil
               Row(
                 children: [
+                  // 1. Yapıldı Butonu
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: note.isCompleted ? const Color(0xFF059669) : const Color(0xFF10B981),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 0,
+                      ),
+                      onPressed: () async {
+                        Navigator.pop(sheetCtx);
+                        final notesProv = Provider.of<NotesProvider>(context, listen: false);
+                        final newStatus = !note.isCompleted;
+                        final success = await notesProv.toggleNoteCompleted(note);
+                        if (context.mounted && success) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                newStatus ? 'Not "Yapıldı" olarak işaretlendi. ✓' : 'Not durumu güncellendi.',
+                                style: const TextStyle(fontWeight: FontWeight.w700),
+                              ),
+                              backgroundColor: newStatus ? const Color(0xFF059669) : AppTheme.brandDark,
+                              duration: const Duration(seconds: 2),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
+                      },
+                      icon: Icon(
+                        note.isCompleted ? Icons.check_circle_rounded : Icons.check_rounded,
+                        size: 16,
+                      ),
+                      label: Text(
+                        note.isCompleted ? 'Yapıldı ✓' : 'Yapıldı',
+                        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5),
+                        maxLines: 1,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+
+                  // 2. Düzenle Butonu
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.brandLight,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 0,
+                      ),
+                      onPressed: () {
+                        Navigator.pop(sheetCtx);
+                        _showAddEditNoteSheet(context, existingNote: note);
+                      },
+                      icon: const Icon(Icons.edit_rounded, size: 16),
+                      label: const Text(
+                        'Düzenle',
+                        style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5),
+                        maxLines: 1,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+
+                  // 3. Sil Butonu
                   Expanded(
                     child: OutlinedButton.icon(
                       style: OutlinedButton.styleFrom(
@@ -2044,25 +2185,12 @@ class HomeScreenState extends State<HomeScreen> {
                         Navigator.pop(sheetCtx);
                         _confirmDeleteNote(context, note);
                       },
-                      icon: const Icon(Icons.delete_outline_rounded, size: 18),
-                      label: const Text('Sil', style: TextStyle(fontWeight: FontWeight.w800)),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.brandLight,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      icon: const Icon(Icons.delete_outline_rounded, size: 16),
+                      label: const Text(
+                        'Sil',
+                        style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5),
+                        maxLines: 1,
                       ),
-                      onPressed: () {
-                        Navigator.pop(sheetCtx);
-                        _showAddEditNoteSheet(context, existingNote: note);
-                      },
-                      icon: const Icon(Icons.edit_rounded, size: 18),
-                      label: const Text('Düzenle', style: TextStyle(fontWeight: FontWeight.w800)),
                     ),
                   ),
                 ],
