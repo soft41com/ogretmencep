@@ -15,10 +15,12 @@ class NotificationService {
   static const String _channelBothId = 'lesson_channel_both';
   static const String _channelSoundId = 'lesson_channel_sound';
   static const String _channelVibrateId = 'lesson_channel_vibrate';
+  static const String _channelNoteId = 'note_reminder_channel';
 
   // ID aralıkları:
   // Başlama bildirimleri: 100000 + (weekday * 1000) + periodId
   // Bitiş bildirimleri: 200000 + (weekday * 1000) + periodId
+  // Not bildirimleri: 300000 + noteId
   // Test bildirimi: 999999
 
   Future<void> initialize() async {
@@ -108,6 +110,18 @@ class NotificationService {
             description: 'Ders başlama ve bitişleri için yalnızca titreşimli uyarılar',
             importance: Importance.high,
             playSound: false,
+            enableVibration: true,
+          ),
+        );
+
+        // 4. Not Hatırlatıcı Kanalı
+        await androidPlugin.createNotificationChannel(
+          const AndroidNotificationChannel(
+            _channelNoteId,
+            'Not Hatırlatıcıları',
+            description: 'Önemli notlar ve görevler için hatırlatıcı bildirimler',
+            importance: Importance.max,
+            playSound: true,
             enableVibration: true,
           ),
         );
@@ -502,6 +516,145 @@ class NotificationService {
         details,
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       );
+    }
+  }
+
+  NotificationDetails _getNoteNotificationDetails() {
+    const androidDetails = AndroidNotificationDetails(
+      _channelNoteId,
+      'Not Hatırlatıcıları',
+      channelDescription: 'Önemli notlar ve görevler için hatırlatıcı bildirimler',
+      importance: Importance.max,
+      priority: Priority.high,
+      playSound: true,
+      enableVibration: true,
+      icon: '@mipmap/ic_launcher',
+      category: AndroidNotificationCategory.reminder,
+      visibility: NotificationVisibility.public,
+      channelShowBadge: true,
+      autoCancel: true,
+    );
+
+    const darwinDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentSound: true,
+      presentBadge: true,
+    );
+
+    return const NotificationDetails(
+      android: androidDetails,
+      iOS: darwinDetails,
+      macOS: darwinDetails,
+    );
+  }
+
+  /// Not için belirlenen saatte bildirim planlar
+  Future<void> scheduleNoteNotification(DailyNoteModel note) async {
+    if (note.id == null || !note.isReminderActive || note.reminderTime == null || note.reminderTime!.isEmpty) {
+      return;
+    }
+
+    await initialize();
+    await requestPermissions();
+
+    final notificationId = 300000 + note.id!;
+
+    // Varsa önceki bildirimi iptal et
+    try {
+      await _notificationsPlugin.cancel(notificationId);
+    } catch (_) {}
+
+    final parts = note.reminderTime!.split(':');
+    if (parts.length != 2) return;
+    final hour = int.tryParse(parts[0]);
+    final minute = int.tryParse(parts[1]);
+    if (hour == null || minute == null) return;
+
+    final details = _getNoteNotificationDetails();
+    final title = (note.title != null && note.title!.trim().isNotEmpty)
+        ? 'Not Hatırlatıcı: ${note.title!.trim()}'
+        : 'Not Hatırlatıcı 📌';
+    final body = note.content.trim();
+
+    final now = tz.TZDateTime.now(tz.local);
+    final bool canExact = await canScheduleExactNotifications();
+    final scheduleMode = canExact
+        ? AndroidScheduleMode.exactAllowWhileIdle
+        : AndroidScheduleMode.inexactAllowWhileIdle;
+
+    if (note.isRecurring) {
+      // Haftalık tekrarlanan gün bildirimi
+      final targetWeekday = note.weekday ?? 1;
+      var scheduledDate = tz.TZDateTime(
+        tz.local,
+        now.year,
+        now.month,
+        now.day,
+        hour,
+        minute,
+      );
+
+      while (scheduledDate.weekday != targetWeekday || scheduledDate.isBefore(now)) {
+        scheduledDate = scheduledDate.add(const Duration(days: 1));
+      }
+
+      try {
+        await _notificationsPlugin.zonedSchedule(
+          notificationId,
+          title,
+          body,
+          scheduledDate,
+          details,
+          androidScheduleMode: scheduleMode,
+          matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+        );
+      } catch (e) {
+        debugPrint('Haftalık not bildirimi planlama hatası: $e');
+      }
+    } else {
+      // Belirli bir tarih için tek seferlik bildirim
+      if (note.date == null || note.date!.isEmpty) return;
+      try {
+        final dateParts = note.date!.split('-');
+        if (dateParts.length != 3) return;
+        final year = int.parse(dateParts[0]);
+        final month = int.parse(dateParts[1]);
+        final day = int.parse(dateParts[2]);
+
+        final scheduledDate = tz.TZDateTime(
+          tz.local,
+          year,
+          month,
+          day,
+          hour,
+          minute,
+        );
+
+        // Geçmişte kalmış bir an ise planlama
+        if (scheduledDate.isBefore(now)) {
+          return;
+        }
+
+        await _notificationsPlugin.zonedSchedule(
+          notificationId,
+          title,
+          body,
+          scheduledDate,
+          details,
+          androidScheduleMode: scheduleMode,
+        );
+      } catch (e) {
+        debugPrint('Tarihli not bildirimi planlama hatası: $e');
+      }
+    }
+  }
+
+  /// Not bildirimini iptal eder
+  Future<void> cancelNoteNotification(int noteId) async {
+    try {
+      await _notificationsPlugin.cancel(300000 + noteId);
+    } catch (e) {
+      debugPrint('Not bildirim iptal hatası: $e');
     }
   }
 }

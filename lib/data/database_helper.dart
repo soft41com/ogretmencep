@@ -130,6 +130,8 @@ class DatabaseHelper {
         weekday INTEGER,
         is_recurring INTEGER NOT NULL DEFAULT 0,
         is_completed INTEGER NOT NULL DEFAULT 0,
+        reminder_time TEXT,
+        is_reminder_active INTEGER NOT NULL DEFAULT 0,
         color TEXT,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
@@ -140,6 +142,12 @@ class DatabaseHelper {
     final existingColumns = columnsInfo.map((c) => c['name'] as String).toSet();
     if (!existingColumns.contains('is_completed')) {
       await db.execute('ALTER TABLE daily_notes ADD COLUMN is_completed INTEGER NOT NULL DEFAULT 0');
+    }
+    if (!existingColumns.contains('reminder_time')) {
+      await db.execute('ALTER TABLE daily_notes ADD COLUMN reminder_time TEXT');
+    }
+    if (!existingColumns.contains('is_reminder_active')) {
+      await db.execute('ALTER TABLE daily_notes ADD COLUMN is_reminder_active INTEGER NOT NULL DEFAULT 0');
     }
   }
 

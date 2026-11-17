@@ -1813,39 +1813,75 @@ class HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Rozet (Tarih ya da Haftalık Tekrar) ve Yapıldı Durumu
+                // Rozet (Tarih ya da Haftalık Tekrar), Hatırlatıcı ve Yapıldı Durumu
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: isRecurring
-                            ? (isDark ? const Color(0xFF1B3B36) : const Color(0xFFE0F2F1))
-                            : (isDark ? const Color(0xFF2E3345) : const Color(0xFFEDE7F6)),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
+                    Expanded(
+                      child: Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
-                          Icon(
-                            badgeIcon,
-                            size: 11,
-                            color: isRecurring
-                                ? (isDark ? AppTheme.accent : const Color(0xFF00796B))
-                                : (isDark ? const Color(0xFFB39DDB) : const Color(0xFF5E35B1)),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            badgeText,
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                            decoration: BoxDecoration(
                               color: isRecurring
-                                  ? (isDark ? AppTheme.accent : const Color(0xFF00796B))
-                                  : (isDark ? const Color(0xFFB39DDB) : const Color(0xFF5E35B1)),
+                                  ? (isDark ? const Color(0xFF1B3B36) : const Color(0xFFE0F2F1))
+                                  : (isDark ? const Color(0xFF2E3345) : const Color(0xFFEDE7F6)),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  badgeIcon,
+                                  size: 11,
+                                  color: isRecurring
+                                      ? (isDark ? AppTheme.accent : const Color(0xFF00796B))
+                                      : (isDark ? const Color(0xFFB39DDB) : const Color(0xFF5E35B1)),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  badgeText,
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    color: isRecurring
+                                        ? (isDark ? AppTheme.accent : const Color(0xFF00796B))
+                                        : (isDark ? const Color(0xFFB39DDB) : const Color(0xFF5E35B1)),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
+                          if (note.isReminderActive && note.reminderTime != null)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: isDark ? const Color(0xFF332A15) : const Color(0xFFFFF8E1),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: const Color(0xFFFFA000).withOpacity(0.5),
+                                  width: 0.8,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.notifications_active_rounded, size: 11, color: Color(0xFFFFA000)),
+                                  const SizedBox(width: 3),
+                                  Text(
+                                    note.reminderTime!,
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w800,
+                                      color: Color(0xFFFFA000),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                         ],
                       ),
                     ),
@@ -2057,6 +2093,27 @@ class HomeScreenState extends State<HomeScreen> {
                             ),
                           ],
                         ),
+                        if (note.isReminderActive && note.reminderTime != null) ...[
+                          const SizedBox(height: 3),
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.notifications_active_rounded,
+                                size: 12,
+                                color: Color(0xFFFFA000),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Hatırlatma: ${note.reminderTime}',
+                                style: const TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFFFFA000),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -2258,6 +2315,8 @@ class HomeScreenState extends State<HomeScreen> {
     // Başlangıç değerleri
     bool isRecurring = existingNote?.isRecurring ?? false;
     int selectedWeekday = existingNote?.weekday ?? _selectedWeekday;
+    bool isReminderActive = existingNote?.isReminderActive ?? false;
+    String reminderTime = existingNote?.reminderTime ?? '09:00';
 
     DateTime selectedDate;
     if (existingNote?.date != null && existingNote!.date!.isNotEmpty) {
@@ -2491,6 +2550,146 @@ class HomeScreenState extends State<HomeScreen> {
                         contentPadding: const EdgeInsets.all(14),
                       ),
                     ),
+                    const SizedBox(height: 14),
+
+                    // Bildirim Hatırlatıcı Alanı
+                    Container(
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.02),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: isReminderActive
+                              ? AppTheme.accent.withOpacity(0.5)
+                              : (isDark ? AppTheme.lineDark : AppTheme.lineLight),
+                          width: isReminderActive ? 1.4 : 1.0,
+                        ),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(7),
+                                decoration: BoxDecoration(
+                                  color: (isReminderActive ? AppTheme.accent : (isDark ? Colors.white24 : Colors.black12)).withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Icon(
+                                  isReminderActive ? Icons.notifications_active_rounded : Icons.notifications_none_rounded,
+                                  color: isReminderActive ? AppTheme.accent : (isDark ? AppTheme.mutedDark : AppTheme.mutedLight),
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Bildirimle Hatırlat',
+                                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5),
+                                    ),
+                                    Text(
+                                      isReminderActive
+                                          ? 'Belirtilen saatte bildirim gönderilecek'
+                                          : 'Belirli bir saatte bildirim almak için açın',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: isDark ? AppTheme.mutedDark : AppTheme.mutedLight,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Switch(
+                                value: isReminderActive,
+                                activeColor: AppTheme.accent,
+                                onChanged: (val) {
+                                  setModalState(() {
+                                    isReminderActive = val;
+                                  });
+                                },
+                              ),
+                            ],
+                          ),
+                          if (isReminderActive) ...[
+                            const SizedBox(height: 8),
+                            const Divider(height: 1),
+                            const SizedBox(height: 10),
+                            InkWell(
+                              borderRadius: BorderRadius.circular(10),
+                              onTap: () async {
+                                final timeParts = reminderTime.split(':');
+                                final initialTime = TimeOfDay(
+                                  hour: int.tryParse(timeParts[0]) ?? 9,
+                                  minute: int.tryParse(timeParts.length > 1 ? timeParts[1] : '0') ?? 0,
+                                );
+
+                                final picked = await showTimePicker(
+                                  context: sheetCtx,
+                                  initialTime: initialTime,
+                                  builder: (context, child) {
+                                    return MediaQuery(
+                                      data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+                                      child: child!,
+                                    );
+                                  },
+                                );
+
+                                if (picked != null) {
+                                  final formatted =
+                                      '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+                                  setModalState(() {
+                                    reminderTime = formatted;
+                                  });
+                                }
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: isDark ? AppTheme.cardDark : Colors.white,
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: isDark ? AppTheme.lineDark : AppTheme.lineLight,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    const Row(
+                                      children: [
+                                        Icon(Icons.access_time_rounded, size: 18, color: AppTheme.accent),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          'Hatırlatma Saati:',
+                                          style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+                                        ),
+                                      ],
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: AppTheme.accent.withOpacity(0.15),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        reminderTime,
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w900,
+                                          color: AppTheme.accent,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
                     const SizedBox(height: 20),
 
                     // Kaydet / Vazgeç Butonları
@@ -2541,12 +2740,19 @@ class HomeScreenState extends State<HomeScreen> {
                                   date: dateStr,
                                   weekday: weekdayVal,
                                   isRecurring: isRecurring,
+                                  reminderTime: isReminderActive ? reminderTime : null,
+                                  isReminderActive: isReminderActive,
+                                  clearReminderTime: !isReminderActive,
                                 );
                                 final ok = await notesProv.updateNote(updated);
                                 if (context.mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
-                                      content: Text(ok ? 'Not güncellendi.' : 'Not güncellenemedi.'),
+                                      content: Text(ok
+                                          ? (isReminderActive
+                                              ? 'Not ve $reminderTime hatırlatıcısı güncellendi. 🔔'
+                                              : 'Not güncellendi.')
+                                          : 'Not güncellenemedi.'),
                                       backgroundColor: ok ? AppTheme.posLight : Colors.red,
                                     ),
                                   );
@@ -2558,11 +2764,17 @@ class HomeScreenState extends State<HomeScreen> {
                                   date: dateStr,
                                   weekday: weekdayVal,
                                   isRecurring: isRecurring,
+                                  reminderTime: isReminderActive ? reminderTime : null,
+                                  isReminderActive: isReminderActive,
                                 );
                                 if (context.mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
-                                      content: Text(created != null ? 'Not eklendi.' : 'Not eklenemedi.'),
+                                      content: Text(created != null
+                                          ? (isReminderActive
+                                              ? 'Not ve $reminderTime hatırlatıcısı eklendi. 🔔'
+                                              : 'Not eklendi.')
+                                          : 'Not eklenemedi.'),
                                       backgroundColor: created != null ? AppTheme.posLight : Colors.red,
                                     ),
                                   );

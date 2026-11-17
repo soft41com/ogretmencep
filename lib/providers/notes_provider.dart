@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../data/database_helper.dart';
 import '../models/models.dart';
+import '../services/notification_service.dart';
 
 class NotesProvider with ChangeNotifier {
   List<DailyNoteModel> _notes = [];
@@ -22,6 +23,13 @@ class NotesProvider with ChangeNotifier {
         orderBy: 'created_at DESC, id DESC',
       );
       _notes = res.map((r) => DailyNoteModel.fromMap(r)).toList();
+
+      // Aktif hatırlatıcıları arka planda planla
+      for (final note in _notes) {
+        if (note.isReminderActive && !note.isCompleted && note.reminderTime != null) {
+          NotificationService.instance.scheduleNoteNotification(note);
+        }
+      }
     } catch (e) {
       debugPrint('NotesProvider fetchNotes error: $e');
     } finally {
@@ -54,6 +62,8 @@ class NotesProvider with ChangeNotifier {
     String? date,
     int? weekday,
     bool isRecurring = false,
+    String? reminderTime,
+    bool isReminderActive = false,
     String? color,
   }) async {
     try {
@@ -65,6 +75,9 @@ class NotesProvider with ChangeNotifier {
         'date': isRecurring ? null : date,
         'weekday': weekday,
         'is_recurring': isRecurring ? 1 : 0,
+        'is_completed': 0,
+        'reminder_time': isReminderActive ? reminderTime : null,
+        'is_reminder_active': isReminderActive ? 1 : 0,
         'color': color,
         'created_at': now,
         'updated_at': now,
@@ -78,6 +91,9 @@ class NotesProvider with ChangeNotifier {
         date: isRecurring ? null : date,
         weekday: weekday,
         isRecurring: isRecurring,
+        isCompleted: false,
+        reminderTime: isReminderActive ? reminderTime : null,
+        isReminderActive: isReminderActive,
         color: color,
         createdAt: now,
         updatedAt: now,
@@ -85,6 +101,11 @@ class NotesProvider with ChangeNotifier {
 
       _notes.insert(0, newNote);
       notifyListeners();
+
+      if (newNote.isReminderActive && newNote.reminderTime != null) {
+        await NotificationService.instance.scheduleNoteNotification(newNote);
+      }
+
       return newNote;
     } catch (e) {
       debugPrint('NotesProvider addNote error: $e');
@@ -115,6 +136,13 @@ class NotesProvider with ChangeNotifier {
         _notes[index] = updatedNote;
         notifyListeners();
       }
+
+      if (updatedNote.isReminderActive && !updatedNote.isCompleted && updatedNote.reminderTime != null) {
+        await NotificationService.instance.scheduleNoteNotification(updatedNote);
+      } else {
+        await NotificationService.instance.cancelNoteNotification(updatedNote.id!);
+      }
+
       return true;
     } catch (e) {
       debugPrint('NotesProvider updateNote error: $e');
@@ -139,6 +167,9 @@ class NotesProvider with ChangeNotifier {
 
       _notes.removeWhere((n) => n.id == id);
       notifyListeners();
+
+      await NotificationService.instance.cancelNoteNotification(id);
+
       return true;
     } catch (e) {
       debugPrint('NotesProvider deleteNote error: $e');
