@@ -2170,8 +2170,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final currentYear = DateTime.now().year;
     final nextYear = currentYear + 1;
     final holidays = appProv.holidays;
+    final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+
     final currentYearHolidays = holidays.where((h) => h.date.startsWith('$currentYear-')).toList();
     final nextYearHolidays = holidays.where((h) => h.date.startsWith('$nextYear-')).toList();
+    final upcomingHolidays = holidays.where((h) => h.date.compareTo(todayStr) >= 0).toList();
 
     return Card(
       elevation: 2,
@@ -2354,10 +2357,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       ),
-                      onPressed: () => _showHolidaysListSheet(context, appProv, isDark),
+                      onPressed: () => _showHolidaysListSheet(context, appProv, scheduleProv, isDark),
                       icon: const Icon(Icons.list_alt_rounded, size: 16),
                       label: Text(
-                        'Tatilleri İncele (${holidays.length})',
+                        'Tatilleri İncele (${upcomingHolidays.length})',
                         style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                       ),
                     ),
@@ -2383,7 +2386,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _showHolidaysListSheet(BuildContext context, AppProvider appProv, bool isDark) {
+  void _showHolidaysListSheet(
+    BuildContext context,
+    AppProvider appProv,
+    ScheduleProvider scheduleProv,
+    bool isDark,
+  ) {
     int? selectedFilterYear;
 
     showModalBottomSheet(
@@ -2396,12 +2404,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
             final holidays = appProv.holidays;
             final currentYear = DateTime.now().year;
             final nextYear = currentYear + 1;
-            final currentYearCount = holidays.where((h) => h.date.startsWith('$currentYear-')).length;
-            final nextYearCount = holidays.where((h) => h.date.startsWith('$nextYear-')).length;
+            final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+
+            // Geçmiş tatil günlerini listeleme; sadece bugün ve gelecekteki tatilleri göster
+            final upcomingHolidays = holidays.where((h) => h.date.compareTo(todayStr) >= 0).toList();
+
+            final currentYearCount = upcomingHolidays.where((h) => h.date.startsWith('$currentYear-')).length;
+            final nextYearCount = upcomingHolidays.where((h) => h.date.startsWith('$nextYear-')).length;
 
             final displayHolidays = selectedFilterYear == null
-                ? holidays
-                : holidays.where((h) => h.date.startsWith('$selectedFilterYear-')).toList();
+                ? upcomingHolidays
+                : upcomingHolidays.where((h) => h.date.startsWith('$selectedFilterYear-')).toList();
 
             return Container(
               height: MediaQuery.of(context).size.height * 0.75,
@@ -2421,7 +2434,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           const Icon(Icons.beach_access_rounded, size: 22, color: AppTheme.brandLight),
                           const SizedBox(width: 8),
                           Text(
-                            'Kayıtlı Tatil Günleri (${holidays.length})',
+                            'Gelecek Tatil Günleri (${upcomingHolidays.length})',
                             style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
                           ),
                         ],
@@ -2440,7 +2453,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       children: [
                         FilterChip(
                           selected: selectedFilterYear == null,
-                          label: Text('Tümü (${holidays.length})'),
+                          label: Text('Tümü (${upcomingHolidays.length})'),
                           onSelected: (_) => setModalState(() => selectedFilterYear = null),
                         ),
                         const SizedBox(width: 6),
@@ -2460,9 +2473,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const Divider(height: 16),
                   if (displayHolidays.isEmpty)
-                    const Expanded(
+                    Expanded(
                       child: Center(
-                        child: Text('Bu filtrede kayıtlı tatil günü bulunmuyor.'),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.event_busy_rounded, size: 48, color: Colors.grey.shade400),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Gelecekte kayıtlı bir tatil günü bulunmuyor.',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: isDark ? AppTheme.mutedDark : AppTheme.mutedLight,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     )
                   else
@@ -2533,9 +2559,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   icon: const Icon(Icons.delete_outline_rounded, size: 18, color: Colors.red),
                                   tooltip: 'Tatili Sil',
                                   onPressed: () async {
-                                    if (h.id != null) {
+                                    final confirm = await showDialog<bool>(
+                                      context: context,
+                                      builder: (dCtx) => AlertDialog(
+                                        title: const Text('Tatili Sil', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                        content: Text('"${h.name}" ($formattedDate) tatilini silmek istediğinize emin misiniz?'),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(dCtx, false),
+                                            child: const Text('Vazgeç'),
+                                          ),
+                                          ElevatedButton(
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Colors.red,
+                                              foregroundColor: Colors.white,
+                                            ),
+                                            onPressed: () => Navigator.pop(dCtx, true),
+                                            child: const Text('Sil'),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                    if (confirm == true && h.id != null) {
                                       await appProv.deleteHoliday(h.id!);
+                                      await scheduleProv.rescheduleNotifications();
                                       setModalState(() {});
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            backgroundColor: AppTheme.posLight,
+                                            content: Text('${h.name} tatili silindi.'),
+                                            duration: const Duration(seconds: 2),
+                                          ),
+                                        );
+                                      }
                                     }
                                   },
                                 ),
