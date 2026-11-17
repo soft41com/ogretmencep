@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:path/path.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import '../models/models.dart';
 import 'test_data_seeder.dart';
 
 class DatabaseHelper {
@@ -43,6 +44,7 @@ class DatabaseHelper {
         await _ensureSettingsColumns(db);
         await _ensureDailyNotesTable(db);
         await _ensureCleanOnboardingData(db);
+        await _ensureHolidaysTable(db);
       },
       onConfigure: _onConfigure,
     );
@@ -130,6 +132,20 @@ class DatabaseHelper {
         color TEXT,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
+      )
+    ''');
+  }
+
+  Future<void> _ensureHolidaysTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS holidays (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        date TEXT NOT NULL UNIQUE,
+        name TEXT NOT NULL,
+        type TEXT NOT NULL DEFAULT 'official',
+        description TEXT,
+        is_half_day INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL
       )
     ''');
   }
@@ -334,6 +350,9 @@ class DatabaseHelper {
 
     // 12. Günlük / Haftalık Notlar
     await _ensureDailyNotesTable(db);
+
+    // 13. Tatil Günleri
+    await _ensureHolidaysTable(db);
 
     // Varsayılan verileri yükle
     await _seedDefaults(db);
@@ -566,6 +585,83 @@ class DatabaseHelper {
       'is_onboarding_completed': completed ? 1 : 0,
       'updated_at': DateTime.now().toIso8601String(),
     });
+  }
+
+  // ===================== TATİL GÜNLERİ (HOLIDAYS) =====================
+
+  /// Yıla göre veya tüm tatil günlerini getirir
+  Future<List<HolidayModel>> getHolidays({int? year}) async {
+    final db = await database;
+    List<Map<String, dynamic>> res;
+    if (year != null) {
+      res = await db.query(
+        'holidays',
+        where: 'date LIKE ?',
+        whereArgs: ['$year-%'],
+        orderBy: 'date ASC',
+      );
+    } else {
+      res = await db.query('holidays', orderBy: 'date ASC');
+    }
+    return res.map((m) => HolidayModel.fromMap(m)).toList();
+  }
+
+  /// Belirli bir tarihteki tatil bilgisini döner (YYYY-MM-DD)
+  Future<HolidayModel?> getHolidayByDate(String dateStr) async {
+    final db = await database;
+    final res = await db.query(
+      'holidays',
+      where: 'date = ?',
+      whereArgs: [dateStr],
+      limit: 1,
+    );
+    if (res.isNotEmpty) {
+      return HolidayModel.fromMap(res.first);
+    }
+    return null;
+  }
+
+  /// Tek bir tatil kaydı ekler veya günceller
+  Future<int> insertOrUpdateHoliday(HolidayModel holiday) async {
+    final db = await database;
+    return await db.insert(
+      'holidays',
+      holiday.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  /// Çoklu tatil günlerini topluca ekler
+  Future<int> insertHolidays(List<HolidayModel> holidays) async {
+    final db = await database;
+    int count = 0;
+    await db.transaction((txn) async {
+      for (final h in holidays) {
+        await txn.insert(
+          'holidays',
+          h.toMap(),
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+        count++;
+      }
+    });
+    return count;
+  }
+
+  /// Belirli bir tatil kaydını siler
+  Future<int> deleteHoliday(int id) async {
+    final db = await database;
+    return await db.delete('holidays', where: 'id = ?', whereArgs: [id]);
+  }
+
+  /// Belirli bir yılın tatillerini temizler
+  Future<int> clearHolidaysForYear(int year) async {
+    final db = await database;
+    return await db.delete(
+      'holidays',
+      where: 'date LIKE ?',
+      whereArgs: ['$year-%'],
+    );
   }
 
   Future<void> close() async {

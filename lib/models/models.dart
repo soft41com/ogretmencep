@@ -628,3 +628,81 @@ class DailyNoteModel {
   }
 }
 
+class HolidayModel {
+  final int? id;
+  final String date; // 'YYYY-MM-DD'
+  final String name; // 'Cumhuriyet Bayramı' vb.
+  final String type; // 'official', 'religious', 'semester', 'break', 'custom'
+  final String? description;
+  final bool isHalfDay;
+  final String createdAt;
+
+  HolidayModel({
+    this.id,
+    required this.date,
+    required this.name,
+    this.type = 'official',
+    this.description,
+    this.isHalfDay = false,
+    String? createdAt,
+  }) : createdAt = createdAt ?? DateTime.now().toIso8601String();
+
+  Map<String, dynamic> toMap() {
+    final map = <String, dynamic>{
+      'date': date,
+      'name': name,
+      'type': type,
+      'description': description,
+      'is_half_day': isHalfDay ? 1 : 0,
+      'created_at': createdAt,
+    };
+    if (id != null) {
+      map['id'] = id;
+    }
+    return map;
+  }
+
+  factory HolidayModel.fromMap(Map<String, dynamic> map) {
+    return HolidayModel(
+      id: map['id'] as int?,
+      date: map['date'] as String,
+      name: map['name'] as String,
+      type: (map['type'] as String?) ?? 'official',
+      description: map['description'] as String?,
+      isHalfDay: (map['is_half_day'] as int? ?? 0) == 1,
+      createdAt: map['created_at'] as String?,
+    );
+  }
+
+  factory HolidayModel.fromJson(Map<String, dynamic> json) {
+    return HolidayModel(
+      date: json['date']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      type: json['type']?.toString() ?? 'official',
+      description: json['description']?.toString(),
+      isHalfDay: json['is_half_day'] == true || json['is_half_day'] == 1,
+    );
+  }
+
+  HolidayModel copyWith({
+    int? id,
+    String? date,
+    String? name,
+    String? type,
+    String? description,
+    bool? isHalfDay,
+    String? createdAt,
+  }) {
+    return HolidayModel(
+      id: id ?? this.id,
+      date: date ?? this.date,
+      name: name ?? this.name,
+      type: type ?? this.type,
+      description: description ?? this.description,
+      isHalfDay: isHalfDay ?? this.isHalfDay,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+}
+
+

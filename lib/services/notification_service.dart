@@ -227,10 +227,28 @@ class NotificationService {
     }
   }
 
+  /// Belirli bir haftanın gününe ait ders bildirimlerini iptal eder (örn. tatil olduğunda)
+  Future<void> cancelLessonNotificationsForWeekday(int weekday) async {
+    try {
+      for (int p = 1; p <= 35; p++) {
+        await _notificationsPlugin.cancel(100000 + (weekday * 1000) + p);
+        await _notificationsPlugin.cancel(200000 + (weekday * 1000) + p);
+      }
+    } catch (e) {
+      debugPrint('Tatil günü bildirim iptal hatası: $e');
+    }
+  }
+
+  /// Belirli bir tarihteki ders bildirimlerini iptal eder
+  Future<void> cancelLessonNotificationsForDate(DateTime date) async {
+    await cancelLessonNotificationsForWeekday(date.weekday);
+  }
+
   /// Öğretmenin ders programına göre bildirimleri zamanlar
   Future<int> scheduleLessonNotifications({
     required List<TimetableEntryModel> timetable,
     required SettingsModel settings,
+    List<HolidayModel>? holidays,
   }) async {
     await initialize();
     await requestPermissions();
@@ -250,6 +268,9 @@ class NotificationService {
     int scheduledCount = 0;
     final notifyType = settings.lessonNotifyType;
     final details = _getNotificationDetails(notifyType);
+
+    // Tatil tarihleri kümesi (yyyy-MM-dd)
+    final holidayDates = holidays?.map((h) => h.date).toSet() ?? <String>{};
 
     for (final entry in timetable) {
       // Hafta içi / hafta sonu kontrolü (1=Pazartesi ... 7=Pazar)
@@ -277,6 +298,11 @@ class NotificationService {
             final notifyMinute = finalNotifyMin % 60;
 
             final scheduledDate = _nextInstanceOfWeekdayAndTime(notifyDay, notifyHour, notifyMinute);
+            final dateStr = '${scheduledDate.year}-${scheduledDate.month.toString().padLeft(2, '0')}-${scheduledDate.day.toString().padLeft(2, '0')}';
+            if (holidayDates.contains(dateStr)) {
+              // Tatil gününde ders bildirimi yapılmaz!
+              continue;
+            }
             final notificationId = 100000 + (weekday * 1000) + entry.periodId;
 
             final className = (entry.className != null && entry.className!.isNotEmpty) ? entry.className! : 'Ders';
@@ -341,6 +367,11 @@ class NotificationService {
             final notifyMinute = finalNotifyMin % 60;
 
             final scheduledDate = _nextInstanceOfWeekdayAndTime(notifyDay, notifyHour, notifyMinute);
+            final dateStr = '${scheduledDate.year}-${scheduledDate.month.toString().padLeft(2, '0')}-${scheduledDate.day.toString().padLeft(2, '0')}';
+            if (holidayDates.contains(dateStr)) {
+              // Tatil gününde ders bitiş bildirimi yapılmaz!
+              continue;
+            }
             final notificationId = 200000 + (weekday * 1000) + entry.periodId;
 
             final className = (entry.className != null && entry.className!.isNotEmpty) ? entry.className! : 'Ders';

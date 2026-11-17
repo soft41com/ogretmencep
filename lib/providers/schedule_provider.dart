@@ -39,9 +39,11 @@ class ScheduleProvider with ChangeNotifier {
           _timetable = entries;
         }
 
+        final holidays = await DatabaseHelper.instance.getHolidays();
         return await NotificationService.instance.scheduleLessonNotifications(
           timetable: entries,
           settings: settings,
+          holidays: holidays,
         );
       }
     } catch (e) {

@@ -1,16 +1,39 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../data/database_helper.dart';
 import '../models/models.dart';
+import '../services/holiday_service.dart';
+import '../services/notification_service.dart';
 
 class AppProvider with ChangeNotifier {
   SettingsModel? _settings;
   bool _isLoading = true;
 
   List<String> _subjects = [];
+  List<HolidayModel> _holidays = [];
+  bool _isLoadingHolidays = false;
 
   SettingsModel? get settings => _settings;
   bool get isLoading => _isLoading;
   List<String> get subjects => _subjects;
+  List<HolidayModel> get holidays => _holidays;
+  bool get isLoadingHolidays => _isLoadingHolidays;
+
+  /// Belirli bir tarihteki tatili döner (örn. 2026-04-23)
+  HolidayModel? getHolidayForDate(DateTime date) {
+    final dateStr = DateFormat('yyyy-MM-dd').format(date);
+    for (final h in _holidays) {
+      if (h.date == dateStr) {
+        return h;
+      }
+    }
+    return null;
+  }
+
+  /// Belirli bir tarihin tatil olup olmadığını döner
+  bool isHoliday(DateTime date) {
+    return getHolidayForDate(date) != null;
+  }
 
   ThemeMode get themeMode {
     if (_settings == null) return ThemeMode.system;
@@ -55,6 +78,7 @@ class AppProvider with ChangeNotifier {
       }
     }
     _subjects = await DatabaseHelper.instance.getTeacherSubjects();
+    await loadHolidays(notify: false);
 
     _isLoading = false;
     notifyListeners();
@@ -158,5 +182,60 @@ class AppProvider with ChangeNotifier {
       _subjects = await DatabaseHelper.instance.getTeacherSubjects();
       notifyListeners();
     }
+  }
+
+  // ===================== TATİL GÜNLERİ (HOLIDAYS) =====================
+
+  /// Kayıtlı tatilleri veritabanından yükler
+  Future<void> loadHolidays({bool notify = true}) async {
+    _holidays = await DatabaseHelper.instance.getHolidays();
+    if (notify) notifyListeners();
+  }
+
+  /// Uzak sunucudan (örn: https://dersprogram.okulsinav.com/json/2016tatil.json) tatil günlerini çeker ve kaydeder
+  Future<int> fetchAndSaveHolidays({int? year, String? customUrl}) async {
+    _isLoadingHolidays = true;
+    notifyListeners();
+
+    try {
+      final targetYear = year ?? DateTime.now().year;
+      final fetched = await HolidayService.instance.fetchHolidaysFromRemote(
+        year: targetYear,
+        customUrl: customUrl,
+      );
+
+      if (fetched.isNotEmpty) {
+        // Önce o yılın tatillerini temizle, ardından yenileri ekle
+        await DatabaseHelper.instance.clearHolidaysForYear(targetYear);
+        await DatabaseHelper.instance.insertHolidays(fetched);
+        await loadHolidays(notify: false);
+
+        // Eğer bugün tatil ise anlık bildirimleri iptal et
+        final now = DateTime.now();
+        if (isHoliday(now)) {
+          await NotificationService.instance.cancelLessonNotificationsForDate(now);
+        }
+      }
+
+      _isLoadingHolidays = false;
+      notifyListeners();
+      return fetched.length;
+    } catch (e) {
+      _isLoadingHolidays = false;
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  /// Manuel yeni tatil ekleme
+  Future<void> addHoliday(HolidayModel holiday) async {
+    await DatabaseHelper.instance.insertOrUpdateHoliday(holiday);
+    await loadHolidays();
+  }
+
+  /// Tatil silme
+  Future<void> deleteHoliday(int id) async {
+    await DatabaseHelper.instance.deleteHoliday(id);
+    await loadHolidays();
   }
 }

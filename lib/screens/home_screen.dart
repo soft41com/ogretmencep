@@ -137,8 +137,14 @@ class HomeScreenState extends State<HomeScreen> {
   TodayLiveInfo _computeTodayLiveInfo(
     List<TimetableEntryModel> todayEntries,
     List<BellPeriodModel> bellPeriods,
-    int timetableDays,
-  ) {
+    int timetableDays, {
+    bool isTodayHoliday = false,
+  }) {
+    // Tatil günlerinde ders ilerlemesi yapılmaz
+    if (isTodayHoliday) {
+      return TodayLiveInfo(state: TodayLiveState.noClassesToday);
+    }
+
     final now = DateTime.now();
     final currentMinutes = now.hour * 60 + now.minute;
 
@@ -895,6 +901,7 @@ class HomeScreenState extends State<HomeScreen> {
     required ClassesProvider classesProv,
     required PlansProvider plansProv,
     required bool isDark,
+    bool isHoliday = false,
   }) {
     // Dersleri başlangıç saatine göre sırala
     final sortedEntries = List<TimetableEntryModel>.from(dayEntries);
@@ -908,7 +915,7 @@ class HomeScreenState extends State<HomeScreen> {
     final isToday = now.year == _selectedDate.year && now.month == _selectedDate.month && now.day == _selectedDate.day;
     final currentMinutes = now.hour * 60 + now.minute;
 
-    if (!isToday || sortedEntries.isEmpty) {
+    if (!isToday || isHoliday || sortedEntries.isEmpty) {
       return sortedEntries
           .map((entry) => _buildLessonCard(
                 context: context,
@@ -1043,10 +1050,19 @@ class HomeScreenState extends State<HomeScreen> {
     final now = DateTime.now();
     final isTodayDate = now.year == _selectedDate.year && now.month == _selectedDate.month && now.day == _selectedDate.day;
 
-    // Bugünün gerçek gününe göre canlı durum hesaplaması
+    // Tatil durumu kontrolü (Resmi, dini veya MEB ara tatili)
+    final isTodayHoliday = appProv.isHoliday(now);
+    final selectedHoliday = appProv.getHolidayForDate(_selectedDate);
+
+    // Bugünün gerçek gününe göre canlı durum hesaplaması (tatil günlerinde canlı ilerleme durdurulur)
     final todayWeekday = now.weekday;
     final todayEntries = scheduleProv.getDayEntries(todayWeekday);
-    final liveInfo = _computeTodayLiveInfo(todayEntries, scheduleProv.bellPeriods, timetableDays);
+    final liveInfo = _computeTodayLiveInfo(
+      todayEntries,
+      scheduleProv.bellPeriods,
+      timetableDays,
+      isTodayHoliday: isTodayHoliday,
+    );
 
     // Aşağıdaki gün listesinde seçili olan günün dersleri
     final dayEntries = scheduleProv.getDayEntries(_selectedWeekday);
@@ -1155,8 +1171,8 @@ class HomeScreenState extends State<HomeScreen> {
           child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            // 🌟 Canlı Ders Bilgilendirme Kutusu (Yalnızca aktif ders saatindeyken ve bugünün tarihine bakılıyorken gösterilir)
-            if (liveInfo.state == TodayLiveState.inProgress && isTodayDate)
+            // 🌟 Canlı Ders Bilgilendirme Kutusu (Yalnızca aktif ders saatindeyken, bugünün tarihine bakılıyorken ve bugün tatil değilken gösterilir)
+            if (liveInfo.state == TodayLiveState.inProgress && isTodayDate && !isTodayHoliday)
               _buildLiveHeroCard(context, liveInfo, classesProv, isDark),
 
             // 📅 Üst Satır: Aktif Gün Başlığı (Örn: 7 Kasım Pazartesi)
@@ -1213,6 +1229,8 @@ class HomeScreenState extends State<HomeScreen> {
                 final isToday = now.year == date.year && now.month == date.month && now.day == date.day;
                 final dayNumber = '${date.day}';
                 final shortName = _shortDays[index];
+                final dayHoliday = appProv.getHolidayForDate(date);
+                final isDayHoliday = dayHoliday != null;
 
                 final selectedBg = isDark ? AppTheme.accent : AppTheme.brandLight;
                 final selectedFg = isDark ? AppTheme.brandDark : Colors.white;
@@ -1231,16 +1249,20 @@ class HomeScreenState extends State<HomeScreen> {
                           decoration: BoxDecoration(
                             color: isSelected
                                 ? selectedBg
-                                : (isDark
-                                    ? AppTheme.cardDark.withOpacity(0.5)
-                                    : Colors.white.withOpacity(0.8)),
+                                : (isDayHoliday
+                                    ? (isDark ? Colors.orange.withOpacity(0.12) : const Color(0xFFFFF3E0))
+                                    : (isDark
+                                        ? AppTheme.cardDark.withOpacity(0.5)
+                                        : Colors.white.withOpacity(0.8))),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
                               color: isSelected
                                   ? selectedBg
-                                  : (isDark
-                                      ? AppTheme.lineDark.withOpacity(0.5)
-                                      : AppTheme.lineLight.withOpacity(0.7)),
+                                  : (isDayHoliday
+                                      ? (isDark ? Colors.orange.shade700.withOpacity(0.5) : Colors.orange.shade300)
+                                      : (isDark
+                                          ? AppTheme.lineDark.withOpacity(0.5)
+                                          : AppTheme.lineLight.withOpacity(0.7))),
                               width: 1,
                             ),
                           ),
@@ -1260,7 +1282,9 @@ class HomeScreenState extends State<HomeScreen> {
                                         ? selectedFg
                                         : (isToday
                                             ? (isDark ? AppTheme.accent : AppTheme.brandLight)
-                                            : (isDark ? AppTheme.inkDark : AppTheme.inkLight)),
+                                            : (isDayHoliday
+                                                ? (isDark ? Colors.amberAccent : Colors.orange.shade800)
+                                                : (isDark ? AppTheme.inkDark : AppTheme.inkLight))),
                                   ),
                                 ),
                               ),
@@ -1276,23 +1300,43 @@ class HomeScreenState extends State<HomeScreen> {
                                         ? selectedFg.withOpacity(0.9)
                                         : (isToday
                                             ? (isDark ? AppTheme.accent : AppTheme.brandLight)
-                                            : (isDark ? AppTheme.mutedDark : AppTheme.mutedLight)),
+                                            : (isDayHoliday
+                                                ? (isDark ? Colors.amberAccent.withOpacity(0.8) : Colors.orange.shade800)
+                                                : (isDark ? AppTheme.mutedDark : AppTheme.mutedLight))),
                                   ),
                                 ),
                               ),
                               const SizedBox(height: 3),
-                              // Minik minimalist bugün noktası
-                              Container(
-                                width: 3.5,
-                                height: 3.5,
-                                decoration: BoxDecoration(
-                                  color: isToday
-                                      ? (isSelected
-                                          ? selectedFg
-                                          : (isDark ? AppTheme.accent : AppTheme.brandLight))
-                                      : Colors.transparent,
-                                  shape: BoxShape.circle,
-                                ),
+                              // Minik minimalist bugün veya tatil noktası
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  if (isToday)
+                                    Container(
+                                      width: 3.5,
+                                      height: 3.5,
+                                      margin: const EdgeInsets.symmetric(horizontal: 1),
+                                      decoration: BoxDecoration(
+                                        color: isSelected
+                                            ? selectedFg
+                                            : (isDark ? AppTheme.accent : AppTheme.brandLight),
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                  if (isDayHoliday)
+                                    Container(
+                                      width: 3.5,
+                                      height: 3.5,
+                                      margin: const EdgeInsets.symmetric(horizontal: 1),
+                                      decoration: BoxDecoration(
+                                        color: isSelected
+                                            ? selectedFg
+                                            : (isDark ? Colors.amberAccent : Colors.orange.shade700),
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                ],
                               ),
                             ],
                           ),
@@ -1322,6 +1366,7 @@ class HomeScreenState extends State<HomeScreen> {
                 classesProv: classesProv,
                 plansProv: plansProv,
                 isDark: isDark,
+                holiday: selectedHoliday,
               ),
             ] else ...[
               _buildTimetableContainer(
@@ -1331,6 +1376,7 @@ class HomeScreenState extends State<HomeScreen> {
                 classesProv: classesProv,
                 plansProv: plansProv,
                 isDark: isDark,
+                holiday: selectedHoliday,
               ),
               const SizedBox(height: 16),
               _buildNotesContainer(
@@ -1357,6 +1403,7 @@ class HomeScreenState extends State<HomeScreen> {
     required ClassesProvider classesProv,
     required PlansProvider plansProv,
     required bool isDark,
+    HolidayModel? holiday,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -1377,6 +1424,12 @@ class HomeScreenState extends State<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Tatil günlerinde programın üstünde o gün tatil olduğu ve ne tatili olduğu gösterilsin
+          if (holiday != null) ...[
+            _buildHolidayBanner(holiday, isDark),
+            const SizedBox(height: 10),
+          ],
+
           // Ders Programı Başlığı ve Tüm Haftayı Gör Butonu
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1485,7 +1538,101 @@ class HomeScreenState extends State<HomeScreen> {
               classesProv: classesProv,
               plansProv: plansProv,
               isDark: isDark,
+              isHoliday: holiday != null,
             ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHolidayBanner(HolidayModel holiday, bool isDark) {
+    final isHalfDay = holiday.isHalfDay;
+    final emoji = isHalfDay ? '⏳' : (holiday.type == 'religious' ? '🌙' : '🏖️');
+    final tagLabel = isHalfDay
+        ? 'Yarım Gün Tatil'
+        : (holiday.type == 'religious'
+            ? 'Dini Bayram'
+            : (holiday.type == 'break' ? 'Okul / Ara Tatil' : 'Resmi Tatil'));
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark
+            ? (isHalfDay ? Colors.amber.shade900.withOpacity(0.25) : const Color(0xFF1B382B))
+            : (isHalfDay ? const Color(0xFFFFF8E1) : const Color(0xFFE8F5E9)),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isDark
+              ? (isHalfDay ? Colors.amber.shade600.withOpacity(0.5) : const Color(0xFF4CAF50).withOpacity(0.4))
+              : (isHalfDay ? const Color(0xFFFFE082) : const Color(0xFFA5D6A7)),
+          width: 1.2,
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: isDark
+                  ? Colors.white.withOpacity(0.08)
+                  : (isHalfDay ? Colors.amber.shade100 : Colors.green.shade100),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            alignment: Alignment.center,
+            child: Text(emoji, style: const TextStyle(fontSize: 18)),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: isHalfDay ? Colors.amber.shade800 : (isDark ? const Color(0xFF2E7D32) : const Color(0xFF388E3C)),
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                      child: Text(
+                        tagLabel,
+                        style: const TextStyle(
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        holiday.name,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 13,
+                          color: isDark ? Colors.white : (isHalfDay ? Colors.brown.shade900 : const Color(0xFF1B5E20)),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  'Bugün tatil olduğu için ders ilerlemesi ve ders zili bildirimleri duraklatılmıştır.',
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w500,
+                    color: isDark ? AppTheme.mutedDark : (isHalfDay ? Colors.brown.shade700 : const Color(0xFF2E7D32)),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

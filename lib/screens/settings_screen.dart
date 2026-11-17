@@ -1682,6 +1682,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _buildDailyPeriodsCard(context, appProv, scheduleProv, isDark),
                 const SizedBox(height: 12),
                 _buildBellPeriodsCard(context, scheduleProv, isDark),
+                const SizedBox(height: 12),
+                _buildHolidaysCard(context, appProv, scheduleProv, isDark),
                 const SizedBox(height: 24),
               ],
             ),
@@ -2112,6 +2114,419 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
           );
+  }
+
+  // 5. Yıllık Tatil Günleri Kartı (Sunucudan Yükleme & Yönetim)
+  Widget _buildHolidaysCard(
+    BuildContext context,
+    AppProvider appProv,
+    ScheduleProvider scheduleProv,
+    bool isDark,
+  ) {
+    final currentYear = DateTime.now().year;
+    final holidays = appProv.holidays;
+    final yearHolidays = holidays.where((h) => h.date.startsWith('$currentYear-')).toList();
+
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: (isDark ? AppTheme.accent : AppTheme.brandLight).withOpacity(0.35),
+          width: 1.2,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: (isDark ? AppTheme.accent : AppTheme.brandLight).withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.beach_access_rounded,
+                    color: isDark ? AppTheme.accent : AppTheme.brandLight,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Yıllık Tatil Günleri',
+                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14.5),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Resmi ve okul tatillerinde ders bildirimleri ve ilerlemesi duraklatılır.',
+                        style: TextStyle(fontSize: 11, color: isDark ? AppTheme.mutedDark : AppTheme.mutedLight),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // Durum Rozeti
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: yearHolidays.isNotEmpty
+                    ? (isDark ? const Color(0xFF1B382B) : const Color(0xFFE8F5E9))
+                    : (isDark ? const Color(0xFF332A15) : const Color(0xFFFFF8E1)),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: yearHolidays.isNotEmpty
+                      ? (isDark ? const Color(0xFF4CAF50).withOpacity(0.4) : const Color(0xFFA5D6A7))
+                      : (isDark ? Colors.amber.shade700 : Colors.amber.shade300),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    yearHolidays.isNotEmpty ? Icons.check_circle_rounded : Icons.info_outline_rounded,
+                    size: 16,
+                    color: yearHolidays.isNotEmpty ? AppTheme.posLight : Colors.amber.shade800,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      yearHolidays.isNotEmpty
+                          ? '$currentYear yılına ait ${yearHolidays.length} tatil günü yüklü ve aktif.'
+                          : '$currentYear yılı için henüz tatil günleri yüklenmedi.',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                        color: yearHolidays.isNotEmpty
+                            ? (isDark ? AppTheme.posLight : const Color(0xFF1B5E20))
+                            : (isDark ? Colors.amber.shade300 : Colors.amber.shade900),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+
+            // Ana Yükle Butonu
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isDark ? AppTheme.accent : AppTheme.brandLight,
+                foregroundColor: isDark ? AppTheme.brandDark : Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: appProv.isLoadingHolidays
+                  ? null
+                  : () async {
+                      try {
+                        final count = await appProv.fetchAndSaveHolidays(year: currentYear);
+                        await scheduleProv.rescheduleNotifications();
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              backgroundColor: AppTheme.posLight,
+                              duration: const Duration(seconds: 3),
+                              content: Row(
+                                children: [
+                                  const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text('$currentYear yılına ait $count tatil günü başarıyla yüklendi!'),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              backgroundColor: AppTheme.negLight,
+                              content: Text('Tatil günleri yüklenirken hata oluştu: $e'),
+                            ),
+                          );
+                        }
+                      }
+                    },
+              icon: appProv.isLoadingHolidays
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Icon(Icons.cloud_download_rounded, size: 18),
+              label: Text(
+                appProv.isLoadingHolidays
+                    ? 'Tatil Günleri İndiriliyor...'
+                    : '$currentYear Yılı Tatil Günlerini Yükle',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5),
+              ),
+            ),
+
+            if (yearHolidays.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      onPressed: () => _showHolidaysListSheet(context, appProv, isDark),
+                      icon: const Icon(Icons.list_alt_rounded, size: 16),
+                      label: const Text('Tatilleri İncele', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      onPressed: () => _showAddHolidayDialog(context, appProv),
+                      icon: const Icon(Icons.add_rounded, size: 16),
+                      label: const Text('+ Özel Tatil', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showHolidaysListSheet(BuildContext context, AppProvider appProv, bool isDark) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final holidays = appProv.holidays;
+
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.75,
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+              decoration: BoxDecoration(
+                color: isDark ? AppTheme.cardDark : AppTheme.cardLight,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.beach_access_rounded, size: 22, color: AppTheme.brandLight),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Kayıtlı Tatil Günleri (${holidays.length})',
+                            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+                          ),
+                        ],
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ],
+                  ),
+                  const Divider(height: 16),
+                  if (holidays.isEmpty)
+                    const Expanded(
+                      child: Center(
+                        child: Text('Henüz kayıtlı tatil günü bulunmuyor.'),
+                      ),
+                    )
+                  else
+                    Expanded(
+                      child: ListView.separated(
+                        itemCount: holidays.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 8),
+                        itemBuilder: (context, index) {
+                          final h = holidays[index];
+                          DateTime? dt;
+                          try {
+                            dt = DateTime.parse(h.date);
+                          } catch (_) {}
+
+                          final formattedDate = dt != null
+                              ? DateFormat('d MMMM yyyy EEEE', 'tr_TR').format(dt)
+                              : h.date;
+
+                          return Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: isDark ? AppTheme.bgDark : Colors.grey.shade50,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: isDark ? AppTheme.lineDark : AppTheme.lineLight,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Text(
+                                  h.isHalfDay ? '⏳' : '🏖️',
+                                  style: const TextStyle(fontSize: 20),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        h.name,
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        formattedDate,
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: isDark ? AppTheme.mutedDark : AppTheme.mutedLight,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                if (h.isHalfDay)
+                                  Container(
+                                    margin: const EdgeInsets.only(right: 6),
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.amber.shade800,
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: const Text(
+                                      'Yarım Gün',
+                                      style: TextStyle(fontSize: 9.5, color: Colors.white, fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                IconButton(
+                                  icon: const Icon(Icons.delete_outline_rounded, size: 18, color: Colors.red),
+                                  tooltip: 'Tatili Sil',
+                                  onPressed: () async {
+                                    if (h.id != null) {
+                                      await appProv.deleteHoliday(h.id!);
+                                      setModalState(() {});
+                                    }
+                                  },
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _showAddHolidayDialog(BuildContext context, AppProvider appProv) async {
+    DateTime selectedDate = DateTime.now();
+    final nameCtrl = TextEditingController();
+    bool isHalfDay = false;
+
+    await showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setDlgState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              title: const Text('Yeni Tatil Günü Ekle', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  TextField(
+                    controller: nameCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Tatil Adı (örn: Kar Tatili, İdari Tatil)',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Tarih Seç', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                    subtitle: Text(DateFormat('d MMMM yyyy EEEE', 'tr_TR').format(selectedDate)),
+                    trailing: const Icon(Icons.calendar_today_rounded, size: 20),
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: selectedDate,
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime(2035),
+                      );
+                      if (picked != null) {
+                        setDlgState(() => selectedDate = picked);
+                      }
+                    },
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Yarım Gün Tatil', style: TextStyle(fontSize: 13)),
+                    value: isHalfDay,
+                    onChanged: (v) => setDlgState(() => isHalfDay = v),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('İptal'),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.brandLight,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: () async {
+                    final name = nameCtrl.text.trim();
+                    if (name.isEmpty) return;
+
+                    final dateStr = DateFormat('yyyy-MM-dd').format(selectedDate);
+                    await appProv.addHoliday(HolidayModel(
+                      date: dateStr,
+                      name: name,
+                      type: 'custom',
+                      isHalfDay: isHalfDay,
+                    ));
+                    if (ctx.mounted) Navigator.pop(ctx);
+                  },
+                  child: const Text('Kaydet'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+    nameCtrl.dispose();
   }
 
   // 6. Kurum Verisi Paylaşımı & İçe Aktarma Kartı
